@@ -1,0 +1,657 @@
+{
+	"Lat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "NMEA/ACC_Latitude_display"
+	},
+	"Long": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "NMEA/ACC_Longitude_display"
+	},
+	"Speed": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "NMEA/Speed_display"
+	},
+	"runid": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "SURVEY/RunID_display"
+	},
+	"division": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-str"
+	},
+	"subdivision": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-str"
+	},
+	"line": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-str"
+	},
+	"plot1": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Outback/Measured_System_Voltage_Debug"
+	},
+	"plot2": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/inverter_new_max_amps_display"
+	},
+	"plot5": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Battery_Monitor/Output_KW_Debug"
+	},
+	"plot3": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Battery_Monitor/Input_KW_Debug"
+	},
+	"plot6": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Inverter_1/Mode_Debug"
+	},
+	"plot4": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Solar/Power_Debug"
+	},
+	"plot7": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Solar/Voltage_Debug"
+	},
+	"plot8": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Battery_Voltage_Debug"
+	},
+	"plot12": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Rpm_Debug"
+	},
+	"plot9": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Load_kW_Debug"
+	},
+	"plot13": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Fuel_Level_Debug"
+	},
+	"plot10": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Running_Hours_Debug"
+	},
+	"plot14": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Maintenance1_Debug"
+	},
+	"plot11": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Battery_Monitor/Battery_Temperature_Debug"
+	},
+	"plot15": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Light_Switch"
+	},
+	"plot16": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Door/Man"
+	},
+	"plot17": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Door/Sliding"
+	},
+	"plot18": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/FanA_Controller/Status/Start"
+	},
+	"plot23": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/FanB_Controller/Status/Start"
+	},
+	"plot19": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Enclosure_Fans_Status"
+	},
+	"plot24": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Smoke_Detector_A_END"
+	},
+	"plot20": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Smoke_Detector_B_END"
+	},
+	"plot25": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Fire_Suppression_Fire"
+	},
+	"plot21": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Fire_Suppression_Trouble"
+	},
+	"plot26": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "NMEA/Speed"
+	},
+	"plot22": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Inside_A_END_display"
+	},
+	"plot27": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Inside_A_END"
+	},
+	"plot28": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Inside_B_END_display"
+	},
+	"plot29": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Inside_B_END_display"
+	},
+	"plot30": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Outside_A_END_display"
+	},
+	"plot31": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Outside_A_END_display"
+	},
+	"plot32": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Outside_B_END_display"
+	},
+	"plot33": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Outside_B_END_display"
+	},
+	"plot34": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Weather/Temp_C_Debug"
+	},
+	"plot35": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Box_display"
+	},
+	"plot36": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Enclosure_Entrance_display"
+	},
+	"plot37": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Enclosure_Entrance_display"
+	},
+	"plot38": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/Enclosure_Exit_display"
+	},
+	"plot39": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/Enclosure_Exit_display"
+	},
+	"plot40": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Weather/Precipitation_Intensity_CLIENT_Debug"
+	},
+	"plot41": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/RT_Lidar_display"
+	},
+	"plot42": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/RT_Lidar_display"
+	},
+	"plot43": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/LT_Lidar_display"
+	},
+	"plot44": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/LT_Lidar_display"
+	},
+	"plot45": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/3D1_display"
+	},
+	"plot46": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/3D1_display"
+	},
+	"plot47": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/3D2_display"
+	},
+	"plot48": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/3D2_display"
+	},
+	"plot49": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/RW1_display"
+	},
+	"plot50": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/RW1_display"
+	},
+	"plot51": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/RW2_display"
+	},
+	"plot52": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/RW2_display"
+	},
+	"plot53": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/RW3_display"
+	},
+	"plot54": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/RW3_display"
+	},
+	"plot55": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Temp/RW4_display"
+	},
+	"plot56": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Humidity/RW4_display"
+	},
+	"batt": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Outback/Measured_System_Voltage_Debug"
+	},
+	"fuel": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Fuel_Level_Debug"
+	},
+	"rpm": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Rpm_Debug"
+	},
+	"load": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Battery_Monitor/Output_KW_Debug"
+	},
+	"charge": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Battery_Monitor/Input_KW_Debug"
+	},
+	"solar": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Solar/Power_Debug"
+	},
+	"ProgBar1": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "CC/param/int7_display"
+	},
+	"ProgBar2": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/inverter_new_max_amps_display"
+	},
+	"ProgBar3": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Load_kW_Debug"
+	},
+	"ProgBar4": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/Generator/Maintenance1_Debug"
+	},
+	"ProgBar5": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int_serv_storage"
+	},
+	"ProgBar6": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int"
+	},
+	"ProgBar7": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int"
+	},
+	"ProgBar8": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int"
+	},
+	"ProgBar9": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int"
+	},
+	"ProgBar10": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO-int"
+	},
+	"test": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "a"
+	},
+    "health": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "CC/master_alive"
+	},
+    "server": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "IPMI/IPMI_status"
+	},
+    "hvac": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "IPMI/Systems_Status"
+	},
+    "cell": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO_bool"
+	},
+    "man": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Door/Man_debug"
+	},
+    "sliding": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Door/Sliding_debug"
+	},
+    "smokea": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Smoke_Detector_A_END_debug"
+	},
+    "smokeb": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Smoke_Detector_B_END_debug"
+	},
+    "fssalert": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Fire_Suppression_Fire_debug"
+	},
+    "fsstbl": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/Fire_Suppression_Trouble_debug"
+	},
+    "cam_man": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Camera/Inside/Door_Man/Status"
+	},
+    "cam_out_man": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Camera/Outside/Door_Man/Status"
+	},
+    "cam_panel": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Camera/Inside/Panel/Status"
+	},
+    "cam_outa": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Camera/Outside/A_End/Status"
+	},
+    "cam_outb": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Camera/Outside/B_End/Status"
+	},
+    "gen": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "CC/Gen_Status"
+	},
+    "fana": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/FanA_Controller/Status/Start_debug"
+	},
+    "fanb": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "MODBUS/FanB_Controller/Status/Start_debug"
+	},
+    "sim": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/sim_force_en"
+	},
+    "compress": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR2_BLWR"
+	},
+    "l1": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR3_L1"
+	},
+    "l2": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR4_L2"
+	},
+    "dma": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR5_AUX1"
+	},
+    "aplx": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR6_AUX2"
+	},
+    "d3_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Server/status/3DTAS"
+	},
+    "li_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Server/status/Lidar"
+	},
+    "nas_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Server/status/NAS"
+	},
+    "img_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Server/status/Imaging"
+	},
+    "rw_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "Server/status/RailWeb"
+	},
+    "dma_stat": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"d3_reboots": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"li_reboots": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"nas_reboots": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"img_reboots": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"rw_reboots": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "TODO"
+	},
+	"dio_rly1": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/VBAT_SW_SPS_NC"
+	},
+	"dio_rly2": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/VBAT_SW_IPS_NC"
+	},
+	"dio_rly3": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/12V_SW_MCC_NC"
+	},
+	"dio_rly4": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/12V_SW_BCC_NC"
+	},
+	"dio_rly5": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/PWR_SW_MCC_NO"
+	},
+	"dio_rly6": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/PWR_SW_BCC_NO"
+	},
+	"dio_rly7": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/48V_SW_PES_NC"
+	},
+	"dio_rly8": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/48V_MBS_NC"
+	},
+	"dio_rly9": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/AUX2_SW_NO"
+	},
+	"dio_rly10": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "I2C_Digital_IO/CAR LIGHTS"
+	},
+	"U3_APLX": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR6_AUX2"
+	},
+	"U3_DMA": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR5_AUX1"
+	},
+	"U3_L1": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR3_L1"
+	},
+	"U3_L2": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR4_L2"
+	},
+	"U3_BLWR": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/SSR2_BLWR"
+	},
+	"U3_VARIPHASE": {
+		"host": "localhost",
+		"port": 1883,
+	    "topic": "2U_DIO/pub/variphase_an"
+	}
+}
