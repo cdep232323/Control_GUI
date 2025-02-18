@@ -1,0 +1,133 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+    - '**.md'
+  pull_request:
+    paths-ignore:
+    - '**.md'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: 6.2.4
+
+jobs:
+  build-msvc:
+    name: Build MSVC
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ runner.os }}
+
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        arch: win64_msvc2019_64
+        cache: true
+        dir: ${{ github.workspace }}
+
+    - uses: ilammy/msvc-dev-cmd@v1
+
+    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+
+    - run: cmake --build build
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-msvc-mqtt-qt
+        path: build/app/mqtt-qt*
+
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: msvc-build-failed
+        path: build/
+
+  build-mingw:
+    name: Build MinGW
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ runner.os }}
+
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        arch: win64_mingw
+        cache: true
+        dir: ${{ github.workspace }}
+        tools: 'tools_mingw1310'
+        add-tools-to-path: true
+
+    - run: cmake -G "MinGW Makefiles" -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+
+    - run: cmake --build build
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-mingw-mqtt-qt
+        path: build/app/mqtt-qt*
+
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mingw-build-failed
+        path: build/
+
+
+  build-ubuntu:
+    name: Build Ubuntu
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ runner.os }}
+
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        cache: true
+        dir: ${{ github.workspace }}
+
+    - uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.16.9'
+
+    - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
+
+    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+
+    - run: cmake --build build
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-mqtt-qt
+        path: build/app/mqtt-qt*
+
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-build-failed
+        path: build/
