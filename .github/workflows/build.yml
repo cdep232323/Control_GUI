@@ -111,10 +111,6 @@ jobs:
         cache: true
         dir: ${{ github.workspace }}
 
-    - uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.16.9'
-
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
     - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
