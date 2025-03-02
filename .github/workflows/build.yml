@@ -14,10 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  QT_VERSION: 6.2.4
+  QT_VERSION: 6.5.3
 
 jobs:
   build-msvc:
+    if: false
     name: Build MSVC
     runs-on: windows-latest
 
@@ -72,9 +73,16 @@ jobs:
         tools: 'tools_mingw1310'
         add-tools-to-path: true
 
-    - run: cmake -G "MinGW Makefiles" -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+    - run: |
+        cmake -G "MinGW Makefiles" -S . -B build        `
+          -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
+          -DCMAKE_BUILD_TYPE=Release                    `
+          -DCMAKE_INSTALL_PREFIX=install                `
+          -DCPACK_GENERATOR=WIX
 
-    - run: cmake --build build
+    - run: cmake --build build --config Release --target install
+
+    - run: cmake --build build --config Release --target package
 
     - uses: actions/upload-artifact@v4
       with:
@@ -89,6 +97,7 @@ jobs:
 
 
   build-ubuntu:
+    if: false
     name: Build Ubuntu
     runs-on: ${{ matrix.os }}
 

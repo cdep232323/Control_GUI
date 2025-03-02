@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mqtt-qt)
 cmake_policy(SET CMP0135 NEW)
 
-set(DBUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -103,3 +103,30 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${qcgaugewidgetsrc_SOURCE_DIR}/source
     ${JSON_INCLUDE_DIRS}
 )
+
+if (WIN32)
+    install(TARGETS Mqtt RUNTIME DESTINATION "${Qt6_DIR}/../../../bin")
+
+    qt_generate_deploy_app_script(
+        TARGET ${PROJECT_NAME}
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+
+    install(SCRIPT ${deploy_script} COMPONENT ${PROJECT_NAME})
+
+    # FIXME this not suppose to be like this windeployqt have embed those libraries somehow
+    install(FILES
+          "${Qt6_DIR}/../../../bin/Qt6PrintSupport.dll"
+        DESTINATION bin
+        COMPONENT QtExplicitDependencies)
+endif()
+
+set(CPACK_COMPONENTS_ALL ${PROJECT_NAME} QtExplicitDependencies)
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION 1.0.0)
+set(CPACK_PACKAGE_VENDOR "${PROJECT_NAME}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_NAME}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
+
+include(CPack)
