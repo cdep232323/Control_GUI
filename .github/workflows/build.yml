@@ -45,7 +45,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-msvc-mqtt-qt
-        path: build/app/mqtt-qt*
+        path: build/*.msi
 
     - if: failure()
       uses: actions/upload-artifact@v4
@@ -87,7 +87,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-mingw-mqtt-qt
-        path: build/app/mqtt-qt*
+        path: build/*.msi
 
     - if: failure()
       uses: actions/upload-artifact@v4

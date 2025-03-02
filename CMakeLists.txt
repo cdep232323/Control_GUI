@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mqtt-qt)
+project(Control_GUI)
 cmake_policy(SET CMP0135 NEW)
 
 set(BUILD_SHARED_LIBS OFF)
