@@ -105,6 +105,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 if (WIN32)
+    install(TARGETS ${PROJECT_NAME} 
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        COMPONENT ${PROJECT_NAME})
+
     # workaround to make windeployqt find Qt6Mqtt.dll
     install(TARGETS Mqtt RUNTIME DESTINATION "${Qt6_DIR}/../../../bin")
 
@@ -117,7 +121,7 @@ if (WIN32)
     install(SCRIPT ${deploy_script} COMPONENT ${PROJECT_NAME})
 endif()
 
-set(CPACK_COMPONENTS_ALL ${PROJECT_NAME} QtExplicitDependencies)
+set(CPACK_COMPONENTS_ALL ${PROJECT_NAME})
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_PACKAGE_VERSION 1.0.0)
 set(CPACK_PACKAGE_VENDOR "${PROJECT_NAME}")
