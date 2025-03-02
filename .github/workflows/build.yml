@@ -18,7 +18,6 @@ env:
 
 jobs:
   build-msvc:
-    if: false
     name: Build MSVC
     runs-on: windows-latest
 
@@ -38,9 +37,15 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+    - run: |
+        cmake -S . -B build -A x64                      `
+          -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
+          -DCMAKE_INSTALL_PREFIX=install                `
+          -DCPACK_GENERATOR=WIX
 
-    - run: cmake --build build
+    - run: cmake --build build --target install
+
+    - run: cmake --build build --target package
 
     - uses: actions/upload-artifact@v4
       with:
@@ -54,6 +59,7 @@ jobs:
         path: build/
 
   build-mingw:
+    if: false
     name: Build MinGW
     runs-on: windows-latest
 
