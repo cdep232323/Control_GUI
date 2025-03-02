@@ -105,6 +105,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 if (WIN32)
+    # workaround to make windeployqt find Qt6Mqtt.dll
     install(TARGETS Mqtt RUNTIME DESTINATION "${Qt6_DIR}/../../../bin")
 
     qt_generate_deploy_app_script(
@@ -114,12 +115,6 @@ if (WIN32)
     )
 
     install(SCRIPT ${deploy_script} COMPONENT ${PROJECT_NAME})
-
-    # FIXME this not suppose to be like this windeployqt have embed those libraries somehow
-    install(FILES
-          "${Qt6_DIR}/../../../bin/Qt6PrintSupport.dll"
-        DESTINATION bin
-        COMPONENT QtExplicitDependencies)
 endif()
 
 set(CPACK_COMPONENTS_ALL ${PROJECT_NAME} QtExplicitDependencies)
