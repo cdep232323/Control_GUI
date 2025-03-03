@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(mqtt-qt)
+project(Control_GUI)
 cmake_policy(SET CMP0135 NEW)
 
-set(DBUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -103,3 +103,30 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${qcgaugewidgetsrc_SOURCE_DIR}/source
     ${JSON_INCLUDE_DIRS}
 )
+
+if (WIN32)
+    install(TARGETS ${PROJECT_NAME} 
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        COMPONENT ${PROJECT_NAME})
+
+    # workaround to make windeployqt find Qt6Mqtt.dll
+    install(TARGETS Mqtt RUNTIME DESTINATION "${Qt6_DIR}/../../../bin")
+
+    qt_generate_deploy_app_script(
+        TARGET ${PROJECT_NAME}
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+
+    install(SCRIPT ${deploy_script} COMPONENT ${PROJECT_NAME})
+endif()
+
+set(CPACK_COMPONENTS_ALL ${PROJECT_NAME})
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION 1.0.0)
+set(CPACK_PACKAGE_VENDOR "${PROJECT_NAME}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_NAME}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
+set(CPACK_WIX_UPGRADE_GUID 43B8BE6D-3D79-41AC-831D-9B7E7932137A)
+
+include(CPack)

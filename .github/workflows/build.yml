@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  QT_VERSION: 6.2.4
+  QT_VERSION: 6.5.3
 
 jobs:
   build-msvc:
@@ -37,14 +37,20 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+    - run: |
+        cmake -S . -B build -A x64                      `
+          -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
+          -DCMAKE_INSTALL_PREFIX=install                `
+          -DCPACK_GENERATOR=WIX
 
-    - run: cmake --build build
+    - run: cmake --build build --target install
+
+    - run: cmake --build build --target package
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-msvc-mqtt-qt
-        path: build/app/mqtt-qt*
+        path: build/*.msi
 
     - if: failure()
       uses: actions/upload-artifact@v4
@@ -72,14 +78,21 @@ jobs:
         tools: 'tools_mingw1310'
         add-tools-to-path: true
 
-    - run: cmake -G "MinGW Makefiles" -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+    - run: |
+        cmake -G "MinGW Makefiles" -S . -B build        `
+          -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
+          -DCMAKE_BUILD_TYPE=Release                    `
+          -DCMAKE_INSTALL_PREFIX=install                `
+          -DCPACK_GENERATOR=WIX
 
-    - run: cmake --build build
+    - run: cmake --build build --config Release --target install
+
+    - run: cmake --build build --config Release --target package
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-mingw-mqtt-qt
-        path: build/app/mqtt-qt*
+        path: build/*.msi
 
     - if: failure()
       uses: actions/upload-artifact@v4
