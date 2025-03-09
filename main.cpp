@@ -1,7 +1,7 @@
 // cmake -S . -B build && cmake --build build && ./build/mqtt-qt
 
 #include <QApplication>
-#include <QtMqtt/QMqttClient>
+#include <QtMqtt/qmqttclient.h>
 #include <QtWidgets>
 
 #include <QThread>

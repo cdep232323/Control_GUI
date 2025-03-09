@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>green_orig.png</file>
+        <file>green.png</file>
+        <file>ic.jpg</file>
+        <file>ic.png</file>
+        <file>red_orig.png</file>
+        <file>red.png</file>
+    </qresource>
+</RCC>
