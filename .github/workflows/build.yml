@@ -145,16 +145,16 @@ jobs:
         copy ..\..\config.json .
         powershell Compress-Archive -Path * -DestinationPath ..\..\Control_GUI-standalone.zip
 
-        - uses: actions/upload-artifact@v4
-          with:
-            name: ${{ runner.os }}-msvc-mqtt-qt
-            path: Control_GUI-standalone.zip
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-msvc-mqtt-qt
+        path: Control_GUI-standalone.zip
 
-        - if: failure()
-          uses: actions/upload-artifact@v4
-          with:
-            name: msvc-build-failed
-            path: build-qmake
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: msvc-build-failed
+        path: build-qmake
 
   build-ubuntu:
     name: Build Ubuntu
