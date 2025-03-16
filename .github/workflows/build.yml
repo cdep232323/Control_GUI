@@ -164,40 +164,40 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-  steps:
-  - uses: actions/checkout@v4
+    steps:
+    - uses: actions/checkout@v4
   
-  - uses: hendrikmuhs/ccache-action@v1.2
-    with:
-      key: ${{ github.job }}-${{ runner.os }}
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ runner.os }}
   
-  - uses: jurplel/install-qt-action@v4
-    with:
-      version: ${{ env.QT_VERSION }}
-      cache: true
-      dir: ${{ github.workspace }}
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        cache: true
+        dir: ${{ github.workspace }}
   
-  - name: Install Qt MQTT package
-    run: |
-      sudo apt-get update
-      sudo apt-get install -y libqt6mqtt6 libqt6mqtt6-dev
+    - name: Install Qt MQTT package
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libqt6mqtt6 libqt6mqtt6-dev
       
-  - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
+    - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
   
-  - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
+    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
   
-  - run: cmake --build build
+    - run: cmake --build build
   
-  - uses: actions/upload-artifact@v4
-    with:
-      name: ${{ runner.os }}-mqtt-qt
-      path: build/Control_GUI
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-mqtt-qt
+        path: build/Control_GUI
   
-  - if: failure()
-    uses: actions/upload-artifact@v4
-    with:
-      name: ${{ runner.os }}-build-failed
-      path: build/
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-build-failed
+        path: build/
 
   release:
     needs: [build-msvc, build-ubuntu]
