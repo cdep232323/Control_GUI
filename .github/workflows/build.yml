@@ -114,11 +114,24 @@ jobs:
       run: |
         mkdir build-qmake
         cd build-qmake
-        copy ..\Control_GUI.pro .
-        echo QT += mqtt >> Control_GUI.pro
-        echo LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt >> Control_GUI.pro
-        echo INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt >> Control_GUI.pro
-        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe CONFIG+=release
+        echo QT += core gui widgets network printsupport > app.pro
+        echo CONFIG += c++17 >> app.pro
+        echo TARGET = Control_GUI >> app.pro
+        echo TEMPLATE = app >> app.pro
+        echo SOURCES += ..\main.cpp ..\gui.cpp >> app.pro
+        echo HEADERS += ..\gui.h >> app.pro
+        echo FORMS += ..\gui.ui >> app.pro
+        echo INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt >> app.pro
+        echo LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt >> app.pro
+        echo INCLUDEPATH += ..\thirdparty\qcustomplot >> app.pro
+        echo SOURCES += ..\thirdparty\qcustomplot\qcustomplot.cpp >> app.pro
+        echo HEADERS += ..\thirdparty\qcustomplot\qcustomplot.h >> app.pro
+        echo INCLUDEPATH += ..\thirdparty\qcgaugewidget\source >> app.pro
+        echo SOURCES += ..\thirdparty\qcgaugewidget\source\qcgaugewidget.cpp >> app.pro
+        echo HEADERS += ..\thirdparty\qcgaugewidget\source\qcgaugewidget.h >> app.pro
+        echo INCLUDEPATH += ..\thirdparty\picojson >> app.pro
+        echo RESOURCES += ..\icons\icons.qrc >> app.pro
+        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe app.pro CONFIG+=release
         if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
         nmake
         if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
