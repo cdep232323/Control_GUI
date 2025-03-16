@@ -14,19 +14,29 @@ find_package(Qt6 COMPONENTS Core Gui Widgets Network PrintSupport REQUIRED)
 # Option to control whether to build MQTT from source
 option(BUILD_MQTT_LOCALLY "Build Qt MQTT module locally" ON)
 
-# Try to find pre-built MQTT module if not building locally
-if(NOT BUILD_MQTT_LOCALLY)
-  find_package(Qt6 COMPONENTS Mqtt QUIET)
+# Try to find Qt MQTT module through standard Qt mechanisms
+find_package(Qt6 COMPONENTS Mqtt QUIET)
+
+# If not found through standard mechanisms, try system packages on Linux
+if(NOT Qt6Mqtt_FOUND)
+  if(UNIX AND NOT APPLE)
+    message(STATUS "Trying to find system Qt MQTT package...")
+    # For systems with apt package manager (like Ubuntu)
+    find_library(QT_MQTT_LIB Qt6Mqtt)
+    if(QT_MQTT_LIB)
+      message(STATUS "Found system Qt MQTT library: ${QT_MQTT_LIB}")
+      add_library(Qt6::Mqtt SHARED IMPORTED)
+      set_target_properties(Qt6::Mqtt PROPERTIES
+        IMPORTED_LOCATION "${QT_MQTT_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "/usr/include/qt6/QtMqtt")
+      set(Qt6Mqtt_FOUND TRUE)
+    endif()
+  endif()
 endif()
 
-# If MQTT wasn't found and we're not building locally, set the flag to build locally
-if(NOT Qt6Mqtt_FOUND AND NOT BUILD_MQTT_LOCALLY)
-  message(STATUS "Pre-built Qt6 MQTT module not found, will build from source")
-  set(BUILD_MQTT_LOCALLY ON)
-endif()
-
-# Build MQTT from source if needed
-if(BUILD_MQTT_LOCALLY)
+# Build MQTT from source if needed and allowed
+if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
+  message(STATUS "Building Qt MQTT from source...")
   # Define our MQTT library by directly including the source
   set(MQTT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src/mqtt")
 
@@ -72,6 +82,11 @@ if(BUILD_MQTT_LOCALLY)
 
   # Add an alias for the library to match the expected name
   add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
+endif()
+
+# If we still don't have MQTT and building locally is disabled, print an error
+if(NOT Qt6Mqtt_FOUND AND NOT BUILD_MQTT_LOCALLY)
+  message(FATAL_ERROR "Qt MQTT module not found and BUILD_MQTT_LOCALLY is disabled. Please install the Qt MQTT module.")
 endif()
 
 # QCustomPlot
