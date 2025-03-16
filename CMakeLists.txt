@@ -35,7 +35,7 @@ if(BUILD_MQTT_LOCALLY)
       message(FATAL_ERROR "MQTT source not found at ${MQTT_SRC_DIR}. Please download MQTT source code to this location.")
   endif()
 
-  # Define MQTT source files
+  # Define MQTT source files - Add all relevant source files including property classes
   set(MQTT_SOURCES
       ${MQTT_SRC_DIR}/qmqttclient.cpp
       ${MQTT_SRC_DIR}/qmqttconnection.cpp
@@ -44,9 +44,20 @@ if(BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.cpp
       ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
       ${MQTT_SRC_DIR}/qmqtttopicname.cpp
+      ${MQTT_SRC_DIR}/qmqttauthenticationproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttconnectionproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttlastwillproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttmessagestatuspropertiesexposed.cpp
+      ${MQTT_SRC_DIR}/qmqttpublishproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttservermessagestatuspropertiesexposed.cpp
+      ${MQTT_SRC_DIR}/qmqttsubscriptionproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttunsubscriptionproperties.cpp
+      ${MQTT_SRC_DIR}/qmqttstringpair.cpp
+      ${MQTT_SRC_DIR}/qmqttuserproperties.cpp
+      ${MQTT_SRC_DIR}/qmqtttype.cpp
   )
 
-  # Define MQTT header files
+  # Define MQTT header files - Add all relevant header files
   set(MQTT_HEADERS
       ${MQTT_SRC_DIR}/qmqttclient.h
       ${MQTT_SRC_DIR}/qmqttconnection_p.h
@@ -56,6 +67,21 @@ if(BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.h
       ${MQTT_SRC_DIR}/qmqtttopicfilter.h
       ${MQTT_SRC_DIR}/qmqtttopicname.h
+      ${MQTT_SRC_DIR}/qmqttauthenticationproperties.h
+      ${MQTT_SRC_DIR}/qmqttauthenticationproperties_p.h
+      ${MQTT_SRC_DIR}/qmqttconnectionproperties.h
+      ${MQTT_SRC_DIR}/qmqttconnectionproperties_p.h
+      ${MQTT_SRC_DIR}/qmqttlastwillproperties.h
+      ${MQTT_SRC_DIR}/qmqttlastwillproperties_p.h
+      ${MQTT_SRC_DIR}/qmqttmessagestatuspropertiesexposed.h
+      ${MQTT_SRC_DIR}/qmqttpublishproperties.h
+      ${MQTT_SRC_DIR}/qmqttpublishproperties_p.h
+      ${MQTT_SRC_DIR}/qmqttservermessagestatuspropertiesexposed.h
+      ${MQTT_SRC_DIR}/qmqttsubscriptionproperties.h
+      ${MQTT_SRC_DIR}/qmqttunsubscriptionproperties.h
+      ${MQTT_SRC_DIR}/qmqttstringpair.h
+      ${MQTT_SRC_DIR}/qmqttuserproperties.h
+      ${MQTT_SRC_DIR}/qmqtttype.h
   )
 
   # Create MQTT library
