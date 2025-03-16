@@ -37,24 +37,48 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Create Third-party Directories
+    - name: Check for existing third-party libraries
       run: |
-        mkdir -p thirdparty/qtmqtt thirdparty/qcustomplot thirdparty/qcgaugewidget/source thirdparty/picojson
+        # Create directories only if they don't exist
+        if (!(Test-Path -Path "thirdparty/qtmqtt")) { mkdir -p thirdparty/qtmqtt }
+        if (!(Test-Path -Path "thirdparty/qcustomplot")) { mkdir -p thirdparty/qcustomplot }
+        if (!(Test-Path -Path "thirdparty/qcgaugewidget/source")) { mkdir -p thirdparty/qcgaugewidget/source }
+        if (!(Test-Path -Path "thirdparty/picojson")) { mkdir -p thirdparty/picojson }
 
-    - name: Fetch QCustomPlot
+    - name: Fetch QCustomPlot if needed
       run: |
-        $url = "https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz"
-        $output = "$env:GITHUB_WORKSPACE\QCustomPlot.tar.gz"
-        Invoke-WebRequest -Uri $url -OutFile $output
-        tar -xzf $output -C thirdparty/qcustomplot
+        if (!(Test-Path -Path "thirdparty/qcustomplot/qcustomplot.cpp")) {
+          $url = "https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz"
+          $output = "$env:GITHUB_WORKSPACE\QCustomPlot.tar.gz"
+          Invoke-WebRequest -Uri $url -OutFile $output
+          tar -xzf $output -C thirdparty/qcustomplot
+          echo "Downloaded QCustomPlot"
+        } else {
+          echo "QCustomPlot already exists, skipping download"
+        }
 
-    - name: Fetch QCGaugeWidget
+    - name: Fetch QCGaugeWidget if needed
       run: |
-        git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 thirdparty/qcgaugewidget
+        if (!(Test-Path -Path "thirdparty/qcgaugewidget/source/qcgaugewidget.cpp")) {
+          git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 temp-gauge
+          if (!(Test-Path -Path "thirdparty/qcgaugewidget/source")) { mkdir -p thirdparty/qcgaugewidget/source }
+          Copy-Item -Path "temp-gauge/source/*" -Destination "thirdparty/qcgaugewidget/source/" -Recurse -Force
+          Remove-Item -Path "temp-gauge" -Recurse -Force
+          echo "Downloaded QCGaugeWidget"
+        } else {
+          echo "QCGaugeWidget already exists, skipping download"
+        }
 
-    - name: Fetch PicoJSON
+    - name: Fetch PicoJSON if needed
       run: |
-        git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson
+        if (!(Test-Path -Path "thirdparty/picojson/picojson.h")) {
+          git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson.tmp
+          Move-Item -Path "thirdparty/picojson.tmp/*" -Destination "thirdparty/picojson/" -Force
+          Remove-Item -Path "thirdparty/picojson.tmp" -Recurse -Force
+          echo "Downloaded PicoJSON"
+        } else {
+          echo "PicoJSON already exists, skipping download"
+        }
 
     - name: Build with CMake
       run: |
@@ -104,22 +128,46 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev
 
-    - name: Create Third-party Directories
+    - name: Check for existing third-party libraries
       run: |
-        mkdir -p thirdparty/qtmqtt thirdparty/qcustomplot thirdparty/qcgaugewidget/source thirdparty/picojson
+        # Create directories only if they don't exist
+        [ -d "thirdparty/qtmqtt" ] || mkdir -p thirdparty/qtmqtt
+        [ -d "thirdparty/qcustomplot" ] || mkdir -p thirdparty/qcustomplot
+        [ -d "thirdparty/qcgaugewidget/source" ] || mkdir -p thirdparty/qcgaugewidget/source
+        [ -d "thirdparty/picojson" ] || mkdir -p thirdparty/picojson
 
-    - name: Fetch QCustomPlot
+    - name: Fetch QCustomPlot if needed
       run: |
-        wget https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz
-        tar -xzf QCustomPlot-source.tar.gz -C thirdparty/qcustomplot
+        if [ ! -f "thirdparty/qcustomplot/qcustomplot.cpp" ]; then
+          wget https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz
+          tar -xzf QCustomPlot-source.tar.gz -C thirdparty/qcustomplot
+          echo "Downloaded QCustomPlot"
+        else
+          echo "QCustomPlot already exists, skipping download"
+        fi
 
-    - name: Fetch QCGaugeWidget
+    - name: Fetch QCGaugeWidget if needed
       run: |
-        git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 thirdparty/qcgaugewidget
+        if [ ! -f "thirdparty/qcgaugewidget/source/qcgaugewidget.cpp" ]; then
+          git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 temp-gauge
+          mkdir -p thirdparty/qcgaugewidget/source
+          cp -r temp-gauge/source/* thirdparty/qcgaugewidget/source/
+          rm -rf temp-gauge
+          echo "Downloaded QCGaugeWidget"
+        else
+          echo "QCGaugeWidget already exists, skipping download"
+        fi
 
-    - name: Fetch PicoJSON
+    - name: Fetch PicoJSON if needed
       run: |
-        git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson
+        if [ ! -f "thirdparty/picojson/picojson.h" ]; then
+          git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson.tmp
+          cp -r thirdparty/picojson.tmp/* thirdparty/picojson/
+          rm -rf thirdparty/picojson.tmp
+          echo "Downloaded PicoJSON"
+        else
+          echo "PicoJSON already exists, skipping download"
+        fi
         
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
