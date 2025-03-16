@@ -113,7 +113,7 @@ jobs:
       run: |
         mkdir build-qmake
         cd build-qmake
-        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe ..\Control_GUI.pro CONFIG+=release
+        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe ..\Control_GUI.pro CONFIG+=release "LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt"
         nmake
 
     - name: Create standalone package

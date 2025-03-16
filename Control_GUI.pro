@@ -7,19 +7,24 @@ TEMPLATE = app
 qtHaveModule(mqtt) {
     QT += mqtt
     message("Using pre-built Qt MQTT module")
+    
+    # Direct path to the MQTT library instead of using QT_MODULE_LIB_BASE variable
+    win32 {
+        LIBS += -L$$[QT_INSTALL_LIBS] -lQt6Mqtt
+    }
 } else {
     message("Pre-built Qt MQTT module not found, using local source files")
-
+    
     # MQTT Integration from source
     QTMQTT_ROOT = $$PWD/thirdparty/qtmqtt
     MQTT_SRC = $$QTMQTT_ROOT/src/mqtt
-
+    
     # Important: Add mqtt source directory to include path
     INCLUDEPATH += $$MQTT_SRC
-
+    
     # Define that we're building the MQTT library
     DEFINES += QT_BUILD_MQTT_LIB
-
+    
     # MQTT Source Files
     SOURCES += \
         $$MQTT_SRC/qmqttclient.cpp \
@@ -29,7 +34,7 @@ qtHaveModule(mqtt) {
         $$MQTT_SRC/qmqttsubscription.cpp \
         $$MQTT_SRC/qmqtttopicfilter.cpp \
         $$MQTT_SRC/qmqtttopicname.cpp
-
+    
     # MQTT Header Files
     HEADERS += \
         $$MQTT_SRC/qmqttclient.h \
