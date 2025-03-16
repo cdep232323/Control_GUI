@@ -177,10 +177,11 @@ jobs:
         cache: true
         dir: ${{ github.workspace }}
   
-    - name: Install Qt MQTT package
+    - name: Install Qt development dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libqt6mqtt6 libqt6mqtt6-dev
+        sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools
+    
       
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
   
