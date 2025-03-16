@@ -110,30 +110,52 @@ jobs:
 
     # Build with qmake instead of CMake for simplicity
     - name: Build with qmake
+      shell: cmd
       run: |
         mkdir build-qmake
         cd build-qmake
-        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe ..\Control_GUI.pro CONFIG+=release "LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt"
+        echo "QT += core gui widgets network printsupport" > temp.pro
+        echo "CONFIG += c++17" >> temp.pro
+        echo "LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt" >> temp.pro
+        echo "INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt" >> temp.pro
+        echo "TARGET = Control_GUI" >> temp.pro
+        echo "TEMPLATE = app" >> temp.pro
+        echo "SOURCES += ../main.cpp ../gui.cpp" >> temp.pro
+        echo "HEADERS += ../gui.h" >> temp.pro
+        echo "FORMS += ../gui.ui" >> temp.pro
+        echo "QCUSTOMPLOT_DIR = ../thirdparty/qcustomplot" >> temp.pro
+        echo "INCLUDEPATH += $$QCUSTOMPLOT_DIR" >> temp.pro
+        echo "SOURCES += $$QCUSTOMPLOT_DIR/qcustomplot.cpp" >> temp.pro
+        echo "HEADERS += $$QCUSTOMPLOT_DIR/qcustomplot.h" >> temp.pro
+        echo "QCGAUGEWIDGET_DIR = ../thirdparty/qcgaugewidget/source" >> temp.pro
+        echo "INCLUDEPATH += $$QCGAUGEWIDGET_DIR" >> temp.pro
+        echo "SOURCES += $$QCGAUGEWIDGET_DIR/qcgaugewidget.cpp" >> temp.pro
+        echo "HEADERS += $$QCGAUGEWIDGET_DIR/qcgaugewidget.h" >> temp.pro
+        echo "PICOJSON_DIR = ../thirdparty/picojson" >> temp.pro
+        echo "INCLUDEPATH += $$PICOJSON_DIR" >> temp.pro
+        echo "RESOURCES += ../icons/icons.qrc" >> temp.pro
+        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe temp.pro CONFIG+=release
         nmake
 
     - name: Create standalone package
+      shell: cmd
       run: |
         cd build-qmake\release
         ${{ env.QT_ROOT_DIR }}\bin\windeployqt.exe --release --no-translations Control_GUI.exe
-        copy ${{ env.QT_ROOT_DIR }}\bin\Qt6Mqtt.dll .\
-        copy ..\..\config.json .\
-        7z a -tzip ..\..\Control_GUI-standalone.zip *
+        copy ${{ env.QT_ROOT_DIR }}\bin\Qt6Mqtt.dll .
+        copy ..\..\config.json .
+        powershell Compress-Archive -Path * -DestinationPath ..\..\Control_GUI-standalone.zip
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ runner.os }}-msvc-mqtt-qt
-        path: Control_GUI-standalone.zip
+        - uses: actions/upload-artifact@v4
+          with:
+            name: ${{ runner.os }}-msvc-mqtt-qt
+            path: Control_GUI-standalone.zip
 
-    - if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: msvc-build-failed
-        path: build-qmake
+        - if: failure()
+          uses: actions/upload-artifact@v4
+          with:
+            name: msvc-build-failed
+            path: build-qmake
 
   build-ubuntu:
     name: Build Ubuntu
