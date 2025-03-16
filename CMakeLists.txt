@@ -8,11 +8,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Option to control whether to build MQTT from source
-option(BUILD_MQTT_LOCALLY "Build Qt MQTT module locally" OFF)
-
 # Find required Qt components
 find_package(Qt6 COMPONENTS Core Gui Widgets Network PrintSupport REQUIRED)
+
+# Option to control whether to build MQTT from source
+option(BUILD_MQTT_LOCALLY "Build Qt MQTT module locally" ON)
 
 # Try to find pre-built MQTT module if not building locally
 if(NOT BUILD_MQTT_LOCALLY)
@@ -35,7 +35,7 @@ if(BUILD_MQTT_LOCALLY)
       message(FATAL_ERROR "MQTT source not found at ${MQTT_SRC_DIR}. Please download MQTT source code to this location.")
   endif()
 
-  # Define MQTT source files - Add all relevant source files including property classes
+  # Define MQTT source files
   set(MQTT_SOURCES
       ${MQTT_SRC_DIR}/qmqttclient.cpp
       ${MQTT_SRC_DIR}/qmqttconnection.cpp
@@ -44,20 +44,10 @@ if(BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.cpp
       ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
       ${MQTT_SRC_DIR}/qmqtttopicname.cpp
-      ${MQTT_SRC_DIR}/qmqttauthenticationproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttconnectionproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttlastwillproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttmessagestatuspropertiesexposed.cpp
-      ${MQTT_SRC_DIR}/qmqttpublishproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttservermessagestatuspropertiesexposed.cpp
-      ${MQTT_SRC_DIR}/qmqttsubscriptionproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttunsubscriptionproperties.cpp
-      ${MQTT_SRC_DIR}/qmqttstringpair.cpp
-      ${MQTT_SRC_DIR}/qmqttuserproperties.cpp
       ${MQTT_SRC_DIR}/qmqtttype.cpp
   )
 
-  # Define MQTT header files - Add all relevant header files
+  # Define MQTT header files
   set(MQTT_HEADERS
       ${MQTT_SRC_DIR}/qmqttclient.h
       ${MQTT_SRC_DIR}/qmqttconnection_p.h
@@ -67,20 +57,6 @@ if(BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.h
       ${MQTT_SRC_DIR}/qmqtttopicfilter.h
       ${MQTT_SRC_DIR}/qmqtttopicname.h
-      ${MQTT_SRC_DIR}/qmqttauthenticationproperties.h
-      ${MQTT_SRC_DIR}/qmqttauthenticationproperties_p.h
-      ${MQTT_SRC_DIR}/qmqttconnectionproperties.h
-      ${MQTT_SRC_DIR}/qmqttconnectionproperties_p.h
-      ${MQTT_SRC_DIR}/qmqttlastwillproperties.h
-      ${MQTT_SRC_DIR}/qmqttlastwillproperties_p.h
-      ${MQTT_SRC_DIR}/qmqttmessagestatuspropertiesexposed.h
-      ${MQTT_SRC_DIR}/qmqttpublishproperties.h
-      ${MQTT_SRC_DIR}/qmqttpublishproperties_p.h
-      ${MQTT_SRC_DIR}/qmqttservermessagestatuspropertiesexposed.h
-      ${MQTT_SRC_DIR}/qmqttsubscriptionproperties.h
-      ${MQTT_SRC_DIR}/qmqttunsubscriptionproperties.h
-      ${MQTT_SRC_DIR}/qmqttstringpair.h
-      ${MQTT_SRC_DIR}/qmqttuserproperties.h
       ${MQTT_SRC_DIR}/qmqtttype.h
   )
 
@@ -89,24 +65,13 @@ if(BUILD_MQTT_LOCALLY)
   target_include_directories(Qt6Mqtt 
     PUBLIC 
       ${MQTT_SRC_DIR}
-      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}
-      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}/QtCore
+      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src
   )
   target_link_libraries(Qt6Mqtt PUBLIC Qt6::Core Qt6::Network)
   target_compile_definitions(Qt6Mqtt PRIVATE QT_BUILD_MQTT_LIB)
 
   # Add an alias for the library to match the expected name
   add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
-  
-  # Create the QtMqtt directory structure for includes
-  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/QtMqtt)
-  
-  # Copy all MQTT headers to the include directory
-  file(GLOB MQTT_HEADERS "${MQTT_SRC_DIR}/*.h")
-  foreach(HEADER ${MQTT_HEADERS})
-    get_filename_component(FILENAME ${HEADER} NAME)
-    configure_file(${HEADER} ${CMAKE_BINARY_DIR}/include/QtMqtt/${FILENAME} COPYONLY)
-  endforeach()
 endif()
 
 # QCustomPlot
@@ -168,10 +133,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${JSON_INCLUDE_DIR}
 )
 
-# Add the include path for QtMqtt when building locally
+# Additional include for MQTT when building locally
 if(BUILD_MQTT_LOCALLY)
-  target_include_directories(${PROJECT_NAME} PRIVATE 
-    ${CMAKE_BINARY_DIR}/include
+  target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src
   )
 endif()
 
