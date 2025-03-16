@@ -41,9 +41,11 @@ jobs:
       run: |
         git clone https://code.qt.io/qt/qtmqtt.git
         cd qtmqtt
+        # Check out a specific tag/branch compatible with Qt 6.5.3
+        git checkout 6.5
         mkdir build
         cd build
-        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
         cmake --build . --config Release
         mkdir -p ${{ env.QT_ROOT_DIR }}/bin
         mkdir -p ${{ env.QT_ROOT_DIR }}/lib
@@ -155,9 +157,11 @@ jobs:
       run: |
         git clone https://code.qt.io/qt/qtmqtt.git
         cd qtmqtt
+        # Check out a specific tag/branch compatible with Qt 6.5.3
+        git checkout 6.5
         mkdir build
         cd build
-        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
         cmake --build . --config Release
         mkdir -p ${{ env.QT_ROOT_DIR }}/bin
         mkdir -p ${{ env.QT_ROOT_DIR }}/lib
@@ -165,7 +169,7 @@ jobs:
         mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt
         mkdir -p ${{ env.QT_ROOT_DIR }}/mkspecs/modules
         copy bin\Qt6Mqtt.dll ${{ env.QT_ROOT_DIR }}\bin\
-        copy lib\libQt6Mqtt.a ${{ env.QT_ROOT_DIR }}\lib\
+        copy lib\Qt6Mqtt.lib ${{ env.QT_ROOT_DIR }}\lib\
         copy ..\src\mqtt\*.h ${{ env.QT_ROOT_DIR }}\include\QtMqtt\
         cd ..
         cd ..
