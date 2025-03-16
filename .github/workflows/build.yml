@@ -37,7 +37,7 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build MQTT Module
+    - name: Build and Install MQTT Module
       run: |
         git clone https://code.qt.io/qt/qtmqtt.git
         cd qtmqtt
@@ -47,12 +47,12 @@ jobs:
         cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
         cmake --build . --config Release
         
-        # Use PowerShell commands to create directories if they don't exist
-        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\bin")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\bin" }
-        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\lib")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\lib" }
-        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt" }
-        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt" }
-        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules" }
+        # Create directories
+        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\bin"
+        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\lib"
+        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt"
+        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt"
+        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules"
         
         # Copy files
         Copy-Item bin\Qt6Mqtt.dll -Destination "${{ env.QT_ROOT_DIR }}\bin\" -Force
@@ -110,7 +110,8 @@ jobs:
         cmake -S . -B build -A x64                      `
           -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
           -DCMAKE_INSTALL_PREFIX=install                `
-          -DCPACK_GENERATOR=WIX
+          -DCPACK_GENERATOR=WIX                         `
+          -DBUILD_MQTT_LOCALLY=OFF
 
     - run: cmake --build build --target install
 
