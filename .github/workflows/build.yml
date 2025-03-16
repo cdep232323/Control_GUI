@@ -41,20 +41,24 @@ jobs:
       run: |
         git clone https://code.qt.io/qt/qtmqtt.git
         cd qtmqtt
-        # Check out a specific tag/branch compatible with Qt 6.5.3
         git checkout 6.5
         mkdir build
         cd build
         cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
         cmake --build . --config Release
-        mkdir -p ${{ env.QT_ROOT_DIR }}/bin
-        mkdir -p ${{ env.QT_ROOT_DIR }}/lib
-        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt
-        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt
-        mkdir -p ${{ env.QT_ROOT_DIR }}/mkspecs/modules
-        copy bin\Qt6Mqtt.dll ${{ env.QT_ROOT_DIR }}\bin\
-        copy lib\Qt6Mqtt.lib ${{ env.QT_ROOT_DIR }}\lib\
-        copy ..\src\mqtt\*.h ${{ env.QT_ROOT_DIR }}\include\QtMqtt\
+        
+        # Use PowerShell commands to create directories if they don't exist
+        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\bin")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\bin" }
+        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\lib")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\lib" }
+        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt" }
+        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt" }
+        if (-not (Test-Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules")) { New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules" }
+        
+        # Copy files
+        Copy-Item bin\Qt6Mqtt.dll -Destination "${{ env.QT_ROOT_DIR }}\bin\" -Force
+        Copy-Item lib\Qt6Mqtt.lib -Destination "${{ env.QT_ROOT_DIR }}\lib\" -Force
+        Copy-Item ..\src\mqtt\*.h -Destination "${{ env.QT_ROOT_DIR }}\include\QtMqtt\" -Force
+        
         cd ..
         cd ..
 
