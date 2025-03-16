@@ -114,28 +114,14 @@ jobs:
       run: |
         mkdir build-qmake
         cd build-qmake
-        echo "QT += core gui widgets network printsupport" > temp.pro
-        echo "CONFIG += c++17" >> temp.pro
-        echo "LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt" >> temp.pro
-        echo "INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt" >> temp.pro
-        echo "TARGET = Control_GUI" >> temp.pro
-        echo "TEMPLATE = app" >> temp.pro
-        echo "SOURCES += ../main.cpp ../gui.cpp" >> temp.pro
-        echo "HEADERS += ../gui.h" >> temp.pro
-        echo "FORMS += ../gui.ui" >> temp.pro
-        echo "QCUSTOMPLOT_DIR = ../thirdparty/qcustomplot" >> temp.pro
-        echo "INCLUDEPATH += $$QCUSTOMPLOT_DIR" >> temp.pro
-        echo "SOURCES += $$QCUSTOMPLOT_DIR/qcustomplot.cpp" >> temp.pro
-        echo "HEADERS += $$QCUSTOMPLOT_DIR/qcustomplot.h" >> temp.pro
-        echo "QCGAUGEWIDGET_DIR = ../thirdparty/qcgaugewidget/source" >> temp.pro
-        echo "INCLUDEPATH += $$QCGAUGEWIDGET_DIR" >> temp.pro
-        echo "SOURCES += $$QCGAUGEWIDGET_DIR/qcgaugewidget.cpp" >> temp.pro
-        echo "HEADERS += $$QCGAUGEWIDGET_DIR/qcgaugewidget.h" >> temp.pro
-        echo "PICOJSON_DIR = ../thirdparty/picojson" >> temp.pro
-        echo "INCLUDEPATH += $$PICOJSON_DIR" >> temp.pro
-        echo "RESOURCES += ../icons/icons.qrc" >> temp.pro
-        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe temp.pro CONFIG+=release
+        copy ..\Control_GUI.pro .
+        echo QT += mqtt >> Control_GUI.pro
+        echo LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt >> Control_GUI.pro
+        echo INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt >> Control_GUI.pro
+        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe CONFIG+=release
+        if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
         nmake
+        if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
     - name: Create standalone package
       shell: cmd
