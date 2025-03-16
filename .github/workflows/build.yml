@@ -184,7 +184,8 @@ jobs:
         
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
-    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=ON -DQT_ALLOW_PRIVATE_INCLUDES=ON
+    # Explicitly turn OFF building MQTT locally for Ubuntu
+    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
       
     - run: cmake --build build
   

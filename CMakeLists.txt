@@ -18,8 +18,56 @@ option(QT_ALLOW_PRIVATE_INCLUDES "Allow including Qt private headers" OFF)
 # Try to find Qt MQTT module through standard Qt mechanisms
 find_package(Qt6 COMPONENTS Mqtt QUIET)
 
+if(NOT Qt6Mqtt_FOUND AND NOT BUILD_MQTT_LOCALLY)
+  # If not found via find_package and we're not building locally, 
+  # try to find the library directly in system paths
+  find_library(MQTT_LIBRARY 
+    NAMES Qt6Mqtt qt6mqtt QtMqtt qtmqtt
+    PATHS 
+      /usr/lib/x86_64-linux-gnu 
+      /usr/local/lib 
+      /usr/lib 
+      /usr/lib/qt6
+      ${CMAKE_PREFIX_PATH}/lib
+    NO_DEFAULT_PATH
+  )
+  
+  find_path(MQTT_INCLUDE_DIR
+    NAMES qmqttclient.h
+    PATHS
+      /usr/include/qt6/QtMqtt
+      /usr/include/x86_64-linux-gnu/qt6/QtMqtt
+      ${CMAKE_PREFIX_PATH}/include/QtMqtt
+    NO_DEFAULT_PATH
+  )
+  
+  if(MQTT_LIBRARY)
+    message(STATUS "Found Qt MQTT library: ${MQTT_LIBRARY}")
+    
+    # If we found the library but not the include directory, set default paths
+    if(NOT MQTT_INCLUDE_DIR)
+      set(MQTT_INCLUDE_DIR /usr/include/qt6/QtMqtt)
+      message(STATUS "MQTT include directory not found, using default: ${MQTT_INCLUDE_DIR}")
+    else()
+      message(STATUS "Found Qt MQTT include directory: ${MQTT_INCLUDE_DIR}")
+    endif()
+    
+    # Create an imported target for MQTT if it wasn't found by find_package
+    if(NOT TARGET Qt6::Mqtt)
+      add_library(Qt6Mqtt SHARED IMPORTED)
+      set_target_properties(Qt6Mqtt PROPERTIES
+        IMPORTED_LOCATION "${MQTT_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${MQTT_INCLUDE_DIR}"
+      )
+      add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
+    endif()
+  else()
+    message(FATAL_ERROR "Qt MQTT module not found and BUILD_MQTT_LOCALLY is disabled. Please install the Qt MQTT module or enable BUILD_MQTT_LOCALLY.")
+  endif()
+endif()
+
 # Build MQTT from source if needed and allowed
-if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
+if(NOT Qt6Mqtt_FOUND AND NOT TARGET Qt6::Mqtt AND BUILD_MQTT_LOCALLY)
   message(STATUS "Building Qt MQTT from source...")
   # Define our MQTT library by directly including the source
   set(MQTT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src/mqtt")
@@ -58,39 +106,10 @@ if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
     endif()
   endif()
 
-  # Define MQTT source files
-  set(MQTT_SOURCES
-      ${MQTT_SRC_DIR}/qmqttclient.cpp
-      ${MQTT_SRC_DIR}/qmqttconnection.cpp
-      ${MQTT_SRC_DIR}/qmqttcontrolpacket.cpp
-      ${MQTT_SRC_DIR}/qmqttmessage.cpp
-      ${MQTT_SRC_DIR}/qmqttsubscription.cpp
-      ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
-      ${MQTT_SRC_DIR}/qmqtttopicname.cpp
-  )
+  # Define MQTT source files - include all possible MQTT files
+  file(GLOB MQTT_SOURCES "${MQTT_SRC_DIR}/*.cpp")
+  file(GLOB MQTT_HEADERS "${MQTT_SRC_DIR}/*.h")
   
-  # Add qmqtttype.cpp if it exists
-  if(EXISTS "${MQTT_SRC_DIR}/qmqtttype.cpp")
-      list(APPEND MQTT_SOURCES "${MQTT_SRC_DIR}/qmqtttype.cpp")
-  endif()
-
-  # Define MQTT header files
-  set(MQTT_HEADERS
-      ${MQTT_SRC_DIR}/qmqttclient.h
-      ${MQTT_SRC_DIR}/qmqttconnection_p.h
-      ${MQTT_SRC_DIR}/qmqttcontrolpacket_p.h
-      ${MQTT_SRC_DIR}/qmqttglobal.h
-      ${MQTT_SRC_DIR}/qmqttmessage.h
-      ${MQTT_SRC_DIR}/qmqttsubscription.h
-      ${MQTT_SRC_DIR}/qmqtttopicfilter.h
-      ${MQTT_SRC_DIR}/qmqtttopicname.h
-  )
-  
-  # Add qmqtttype.h if it exists
-  if(EXISTS "${MQTT_SRC_DIR}/qmqtttype.h")
-      list(APPEND MQTT_HEADERS "${MQTT_SRC_DIR}/qmqtttype.h")
-  endif()
-
   # Create MQTT library
   add_library(Qt6Mqtt STATIC ${MQTT_SOURCES} ${MQTT_HEADERS})
   
@@ -118,11 +137,6 @@ if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
     get_filename_component(FILENAME ${HEADER} NAME)
     configure_file(${HEADER} ${CMAKE_BINARY_DIR}/include/QtMqtt/${FILENAME} COPYONLY)
   endforeach()
-endif()
-
-# If we still don't have MQTT and building locally is disabled, print an error
-if(NOT Qt6Mqtt_FOUND AND NOT BUILD_MQTT_LOCALLY)
-  message(FATAL_ERROR "Qt MQTT module not found and BUILD_MQTT_LOCALLY is disabled. Please install the Qt MQTT module.")
 endif()
 
 # QCustomPlot
