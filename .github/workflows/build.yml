@@ -157,13 +157,13 @@ jobs:
         path: build-qmake
 
   build-ubuntu:
-  name: Build Ubuntu
-  runs-on: ${{ matrix.os }}
-  strategy:
-    fail-fast: false
-    matrix:
-      os:
-      - ubuntu-latest
+    name: Build Ubuntu
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
   steps:
   - uses: actions/checkout@v4
   
