@@ -37,124 +37,46 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build MQTT Module
+    - name: Create Third-party Directories
       run: |
-        git clone https://code.qt.io/qt/qtmqtt.git
-        cd qtmqtt
-        git checkout 6.5
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
-        cmake --build . --config Release
+        mkdir -p thirdparty/qtmqtt thirdparty/qcustomplot thirdparty/qcgaugewidget/source thirdparty/picojson
+
+    - name: Fetch QCustomPlot
+      run: |
+        $url = "https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz"
+        $output = "$env:GITHUB_WORKSPACE\QCustomPlot.tar.gz"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        tar -xzf $output -C thirdparty/qcustomplot
+
+    - name: Fetch QCGaugeWidget
+      run: |
+        git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 thirdparty/qcgaugewidget
+
+    - name: Fetch PicoJSON
+      run: |
+        git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson
+
+    - name: Build with CMake
+      run: |
+        cmake -S . -B build -A x64 `
+          -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" `
+          -DCMAKE_INSTALL_PREFIX=install `
+          -DBUILD_MQTT_LOCALLY=ON `
+          -DCPACK_GENERATOR=WIX
         
-        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\bin"
-        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\lib"
-        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt"
-        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt"
-        New-Item -ItemType Directory -Force -Path "${{ env.QT_ROOT_DIR }}\mkspecs\modules"
-        
-        Copy-Item bin\Qt6Mqtt.dll -Destination "${{ env.QT_ROOT_DIR }}\bin\" -Force
-        Copy-Item lib\Qt6Mqtt.lib -Destination "${{ env.QT_ROOT_DIR }}\lib\" -Force
-        Copy-Item ..\src\mqtt\*.h -Destination "${{ env.QT_ROOT_DIR }}\include\QtMqtt\" -Force
-        
-        cd ..
-        cd ..
-
-    - name: Create MQTT exports header
-      run: |
-        @"
-        #ifndef QTMQTTEXPORTS_H
-        #define QTMQTTEXPORTS_H
-
-        #include <QtCore/qglobal.h>
-
-        #if defined(QT_SHARED) || !defined(QT_STATIC)
-        #  if defined(QT_BUILD_MQTT_LIB)
-        #    define Q_MQTT_EXPORT Q_DECL_EXPORT
-        #  else
-        #    define Q_MQTT_EXPORT Q_DECL_IMPORT
-        #  endif
-        #else
-        #  define Q_MQTT_EXPORT
-        #endif
-
-        #ifdef BUILD_STATIC
-        #  define QTMQTT_EXPORT
-        #  define QTMQTT_NO_EXPORT
-        #else
-        #  define QTMQTT_EXPORT Q_DECL_EXPORT
-        #  define QTMQTT_NO_EXPORT Q_DECL_HIDDEN
-        #endif
-
-        #endif // QTMQTTEXPORTS_H
-        "@ | Out-File -FilePath "${{ env.QT_ROOT_DIR }}\include\QtMqtt\QtMqtt\qtmqttexports.h" -Encoding ascii
-
-    - name: Create MQTT module PRIs
-      run: |
-        @"
-        QT.mqtt.VERSION = ${{ env.QT_VERSION }}
-        QT.mqtt.name = QtMqtt
-        QT.mqtt.module = Qt6Mqtt
-        QT.mqtt.libs = $$QT_MODULE_LIB_BASE
-        QT.mqtt.includes = $$QT_MODULE_INCLUDE_BASE $$QT_MODULE_INCLUDE_BASE/QtMqtt
-        QT.mqtt.frameworks =
-        QT.mqtt.bins = $$QT_MODULE_BIN_BASE
-        QT.mqtt.depends = core network
-        QT.mqtt.uses =
-        QT.mqtt.module_config = v2
-        QT.mqtt.DEFINES = QT_MQTT_LIB
-        QT.mqtt.enabled_features =
-        QT.mqtt.disabled_features =
-        QT_MODULES += mqtt
-        "@ | Out-File -FilePath "${{ env.QT_ROOT_DIR }}\mkspecs\modules\qt_lib_mqtt.pri" -Encoding ascii
-
-    # Build with qmake instead of CMake for simplicity
-    - name: Build with qmake
-      shell: cmd
-      run: |
-        mkdir build-qmake
-        cd build-qmake
-        echo QT += core gui widgets network printsupport > app.pro
-        echo CONFIG += c++17 >> app.pro
-        echo TARGET = Control_GUI >> app.pro
-        echo TEMPLATE = app >> app.pro
-        echo SOURCES += ..\main.cpp ..\gui.cpp >> app.pro
-        echo HEADERS += ..\gui.h >> app.pro
-        echo FORMS += ..\gui.ui >> app.pro
-        echo INCLUDEPATH += ${{ env.QT_ROOT_DIR }}/include/QtMqtt >> app.pro
-        echo LIBS += -L${{ env.QT_ROOT_DIR }}/lib -lQt6Mqtt >> app.pro
-        echo INCLUDEPATH += ..\thirdparty\qcustomplot >> app.pro
-        echo SOURCES += ..\thirdparty\qcustomplot\qcustomplot.cpp >> app.pro
-        echo HEADERS += ..\thirdparty\qcustomplot\qcustomplot.h >> app.pro
-        echo INCLUDEPATH += ..\thirdparty\qcgaugewidget\source >> app.pro
-        echo SOURCES += ..\thirdparty\qcgaugewidget\source\qcgaugewidget.cpp >> app.pro
-        echo HEADERS += ..\thirdparty\qcgaugewidget\source\qcgaugewidget.h >> app.pro
-        echo INCLUDEPATH += ..\thirdparty\picojson >> app.pro
-        echo RESOURCES += ..\icons\icons.qrc >> app.pro
-        ${{ env.QT_ROOT_DIR }}\bin\qmake.exe app.pro CONFIG+=release
-        if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
-        nmake
-        if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
-
-    - name: Create standalone package
-      shell: cmd
-      run: |
-        cd build-qmake\release
-        ${{ env.QT_ROOT_DIR }}\bin\windeployqt.exe --release --no-translations Control_GUI.exe
-        copy ${{ env.QT_ROOT_DIR }}\bin\Qt6Mqtt.dll .
-        copy ..\..\config.json .
-        powershell Compress-Archive -Path * -DestinationPath ..\..\Control_GUI-standalone.zip
+        cmake --build build --config Release --target install
+        cmake --build build --config Release --target package
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-msvc-mqtt-qt
-        path: Control_GUI-standalone.zip
+        path: build/*.msi
 
     - if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: msvc-build-failed
-        path: build-qmake
+        path: build/
 
   build-ubuntu:
     name: Build Ubuntu
@@ -180,14 +102,41 @@ jobs:
     - name: Install Qt development dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools
+        sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev
+
+    - name: Create Third-party Directories
+      run: |
+        mkdir -p thirdparty/qtmqtt thirdparty/qcustomplot thirdparty/qcgaugewidget/source thirdparty/picojson
+
+    - name: Fetch QCustomPlot
+      run: |
+        wget https://www.qcustomplot.com/release/2.1.1/QCustomPlot-source.tar.gz
+        tar -xzf QCustomPlot-source.tar.gz -C thirdparty/qcustomplot
+
+    - name: Fetch QCGaugeWidget
+      run: |
+        git clone https://github.com/ska/Qt-custom-gauge-widget.git --depth 1 thirdparty/qcgaugewidget
+
+    - name: Fetch PicoJSON
+      run: |
+        git clone https://github.com/kazuho/picojson.git --depth 1 thirdparty/picojson
         
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
-    # Explicitly turn OFF building MQTT locally for Ubuntu
-    - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
-      
-    - run: cmake --build build
+    # For Ubuntu, we'll try building with system libraries first, if that fails fall back to building locally
+    - name: Build with CMake (using system libraries)
+      id: system_build
+      continue-on-error: true
+      run: |
+        cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
+        cmake --build build
+
+    # If system build fails, try building locally
+    - name: Build with CMake (building MQTT locally)
+      if: steps.system_build.outcome == 'failure'
+      run: |
+        cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=ON
+        cmake --build build
   
     - uses: actions/upload-artifact@v4
       with:
@@ -216,6 +165,7 @@ jobs:
         with:
           files: |
             artifacts/**/*.zip
+            artifacts/**/*.msi
             artifacts/**/Control_GUI*
           draft: false
           prerelease: false
