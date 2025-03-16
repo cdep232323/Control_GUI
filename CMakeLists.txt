@@ -8,48 +8,70 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Option to control whether to build MQTT from source
+option(BUILD_MQTT_LOCALLY "Build Qt MQTT module locally" OFF)
+
 # Find required Qt components
 find_package(Qt6 COMPONENTS Core Gui Widgets Network PrintSupport REQUIRED)
 
-# Define our MQTT library by directly including the source
-set(MQTT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src/mqtt")
-
-# Check if the MQTT source directory exists
-if(NOT EXISTS "${MQTT_SRC_DIR}")
-    message(FATAL_ERROR "MQTT source not found at ${MQTT_SRC_DIR}. Please download MQTT source code to this location.")
+# Try to find pre-built MQTT module if not building locally
+if(NOT BUILD_MQTT_LOCALLY)
+  find_package(Qt6 COMPONENTS Mqtt QUIET)
 endif()
 
-# Define MQTT source files
-set(MQTT_SOURCES
-    ${MQTT_SRC_DIR}/qmqttclient.cpp
-    ${MQTT_SRC_DIR}/qmqttconnection.cpp
-    ${MQTT_SRC_DIR}/qmqttcontrolpacket.cpp
-    ${MQTT_SRC_DIR}/qmqttmessage.cpp
-    ${MQTT_SRC_DIR}/qmqttsubscription.cpp
-    ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
-    ${MQTT_SRC_DIR}/qmqtttopicname.cpp
-)
+# If MQTT wasn't found and we're not building locally, set the flag to build locally
+if(NOT Qt6Mqtt_FOUND AND NOT BUILD_MQTT_LOCALLY)
+  message(STATUS "Pre-built Qt6 MQTT module not found, will build from source")
+  set(BUILD_MQTT_LOCALLY ON)
+endif()
 
-# Define MQTT header files
-set(MQTT_HEADERS
-    ${MQTT_SRC_DIR}/qmqttclient.h
-    ${MQTT_SRC_DIR}/qmqttconnection_p.h
-    ${MQTT_SRC_DIR}/qmqttcontrolpacket_p.h
-    ${MQTT_SRC_DIR}/qmqttglobal.h
-    ${MQTT_SRC_DIR}/qmqttmessage.h
-    ${MQTT_SRC_DIR}/qmqttsubscription.h
-    ${MQTT_SRC_DIR}/qmqtttopicfilter.h
-    ${MQTT_SRC_DIR}/qmqtttopicname.h
-)
+# Build MQTT from source if needed
+if(BUILD_MQTT_LOCALLY)
+  # Define our MQTT library by directly including the source
+  set(MQTT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src/mqtt")
 
-# Create MQTT library
-add_library(Qt6Mqtt STATIC ${MQTT_SOURCES} ${MQTT_HEADERS})
-target_include_directories(Qt6Mqtt PUBLIC ${MQTT_SRC_DIR})
-target_link_libraries(Qt6Mqtt PUBLIC Qt6::Core Qt6::Network)
-target_compile_definitions(Qt6Mqtt PRIVATE QT_BUILD_MQTT_LIB)
+  # Check if the MQTT source directory exists
+  if(NOT EXISTS "${MQTT_SRC_DIR}")
+      message(FATAL_ERROR "MQTT source not found at ${MQTT_SRC_DIR}. Please download MQTT source code to this location.")
+  endif()
 
-# Add an alias for the library to match the expected name
-add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
+  # Define MQTT source files
+  set(MQTT_SOURCES
+      ${MQTT_SRC_DIR}/qmqttclient.cpp
+      ${MQTT_SRC_DIR}/qmqttconnection.cpp
+      ${MQTT_SRC_DIR}/qmqttcontrolpacket.cpp
+      ${MQTT_SRC_DIR}/qmqttmessage.cpp
+      ${MQTT_SRC_DIR}/qmqttsubscription.cpp
+      ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
+      ${MQTT_SRC_DIR}/qmqtttopicname.cpp
+  )
+
+  # Define MQTT header files
+  set(MQTT_HEADERS
+      ${MQTT_SRC_DIR}/qmqttclient.h
+      ${MQTT_SRC_DIR}/qmqttconnection_p.h
+      ${MQTT_SRC_DIR}/qmqttcontrolpacket_p.h
+      ${MQTT_SRC_DIR}/qmqttglobal.h
+      ${MQTT_SRC_DIR}/qmqttmessage.h
+      ${MQTT_SRC_DIR}/qmqttsubscription.h
+      ${MQTT_SRC_DIR}/qmqtttopicfilter.h
+      ${MQTT_SRC_DIR}/qmqtttopicname.h
+  )
+
+  # Create MQTT library
+  add_library(Qt6Mqtt STATIC ${MQTT_SOURCES} ${MQTT_HEADERS})
+  target_include_directories(Qt6Mqtt 
+    PUBLIC 
+      ${MQTT_SRC_DIR}
+      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}
+      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}/QtCore
+  )
+  target_link_libraries(Qt6Mqtt PUBLIC Qt6::Core Qt6::Network)
+  target_compile_definitions(Qt6Mqtt PRIVATE QT_BUILD_MQTT_LIB)
+
+  # Add an alias for the library to match the expected name
+  add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
+endif()
 
 # QCustomPlot
 set(QCUSTOMPLOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qcustomplot")
@@ -105,10 +127,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${MQTT_SRC_DIR}
     ${QCUSTOMPLOT_DIR}
     ${QCGAUGEWIDGET_DIR}
     ${JSON_INCLUDE_DIR}
+)
+
+# Copy config.json to build directory
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/config.json
+    COMMENT "Copying config.json to build directory"
 )
 
 # Windows-specific settings
@@ -117,13 +146,14 @@ if(WIN32)
     
     # Installation rules
     install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json DESTINATION bin)
     
     # Deploy Qt files
     set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
     
     # Package settings
-    set(CPACK_GENERATOR "NSIS")
+    set(CPACK_GENERATOR "WIX;ZIP")
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
     set(CPACK_PACKAGE_VERSION "1.0.0")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")

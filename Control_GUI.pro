@@ -1,8 +1,46 @@
-QT       += core gui widgets network printsupport mqtt
-
+QT       += core gui widgets network printsupport
 CONFIG   += c++17
 TARGET = Control_GUI
 TEMPLATE = app
+
+# Try to use the pre-built MQTT module if available
+qtHaveModule(mqtt) {
+    QT += mqtt
+    message("Using pre-built Qt MQTT module")
+} else {
+    message("Pre-built Qt MQTT module not found, using local source files")
+
+    # MQTT Integration from source
+    QTMQTT_ROOT = $$PWD/thirdparty/qtmqtt
+    MQTT_SRC = $$QTMQTT_ROOT/src/mqtt
+
+    # Important: Add mqtt source directory to include path
+    INCLUDEPATH += $$MQTT_SRC
+
+    # Define that we're building the MQTT library
+    DEFINES += QT_BUILD_MQTT_LIB
+
+    # MQTT Source Files
+    SOURCES += \
+        $$MQTT_SRC/qmqttclient.cpp \
+        $$MQTT_SRC/qmqttconnection.cpp \
+        $$MQTT_SRC/qmqttcontrolpacket.cpp \
+        $$MQTT_SRC/qmqttmessage.cpp \
+        $$MQTT_SRC/qmqttsubscription.cpp \
+        $$MQTT_SRC/qmqtttopicfilter.cpp \
+        $$MQTT_SRC/qmqtttopicname.cpp
+
+    # MQTT Header Files
+    HEADERS += \
+        $$MQTT_SRC/qmqttclient.h \
+        $$MQTT_SRC/qmqttconnection_p.h \
+        $$MQTT_SRC/qmqttcontrolpacket_p.h \
+        $$MQTT_SRC/qmqttglobal.h \
+        $$MQTT_SRC/qmqttmessage.h \
+        $$MQTT_SRC/qmqttsubscription.h \
+        $$MQTT_SRC/qmqtttopicfilter.h \
+        $$MQTT_SRC/qmqtttopicname.h
+}
 
 # Application source files
 SOURCES += \
@@ -13,18 +51,31 @@ HEADERS += \
 FORMS += \
     gui.ui
 
+# Configuration file copy
 CONFIG_SOURCE = $$PWD/config.json
 CONFIG_DEST = $$OUT_PWD/config.json
-CONFIG_DEST_2 = $$OUT_PWD/config.json
 
-MQTT_DLL_SOURCE = C:/Qt/6.8.2/msvc2022_64/bin/Qt6Mqtt.dll
-MQTT_DLL_DEST = $$OUT_PWD/Qt6Mqtt.dll
+# MQTT DLL copy (only needed when using pre-built module)
+qtHaveModule(mqtt) {
+    win32 {
+        MQTT_DLL_SOURCE = $$[QT_INSTALL_BINS]/Qt6Mqtt.dll
+        MQTT_DLL_DEST = $$OUT_PWD/Qt6Mqtt.dll
+    }
+}
 
 # For release builds
 CONFIG(release, debug|release) {
-    CONFIG_DEST = $$OUT_PWD/config.json
-    CONFIG_DEST_2 = $$OUT_PWD/release/config.json
-    MQTT_DLL_DEST = $$OUT_PWD/release/Qt6Mqtt.dll
+    CONFIG_DEST = $$OUT_PWD/release/config.json
+    qtHaveModule(mqtt):win32 {
+        MQTT_DLL_DEST = $$OUT_PWD/release/Qt6Mqtt.dll
+    }
+} else {
+    CONFIG(debug, debug|release) {
+        CONFIG_DEST = $$OUT_PWD/debug/config.json
+        qtHaveModule(mqtt):win32 {
+            MQTT_DLL_DEST = $$OUT_PWD/debug/Qt6Mqtt.dll
+        }
+    }
 }
 
 # QCustomPlot
@@ -47,17 +98,22 @@ INCLUDEPATH += $$PICOJSON_DIR
 RESOURCES += \
     icons/icons.qrc
 
+# Copy commands
 copyconfig.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST, /, $$QMAKE_DIR_SEP)\"
-copyconfig2.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST_2, /, $$QMAKE_DIR_SEP)\"
-copymqttdll.commands = $$QMAKE_COPY_FILE \"$$replace(MQTT_DLL_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(MQTT_DLL_DEST, /, $$QMAKE_DIR_SEP)\"
 
-# Make sure these commands run as part of the build
-first.depends = $(first) copyconfig copyconfig2 copymqttdll
+# Only create MQTT copy command if using pre-built module
+qtHaveModule(mqtt):win32 {
+    copymqttdll.commands = $$QMAKE_COPY_FILE \"$$replace(MQTT_DLL_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(MQTT_DLL_DEST, /, $$QMAKE_DIR_SEP)\"
+    first.depends = $(first) copyconfig copymqttdll
+    export(copymqttdll.commands)
+} else {
+    first.depends = $(first) copyconfig
+}
+
 export(first.depends)
 export(copyconfig.commands)
-export(copyconfig2.commands)
-export(copymqttdll.commands)
-QMAKE_EXTRA_TARGETS += first copyconfig copyconfig2 copymqttdll
+QMAKE_EXTRA_TARGETS += first copyconfig
+qtHaveModule(mqtt):win32: QMAKE_EXTRA_TARGETS += copymqttdll
 
 # Default rules for deployment
 qnx: target.path = /tmp/$${TARGET}/bin
