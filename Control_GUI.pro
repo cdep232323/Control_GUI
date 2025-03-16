@@ -15,6 +15,7 @@ FORMS += \
 
 CONFIG_SOURCE = $$PWD/config.json
 CONFIG_DEST = $$OUT_PWD/config.json
+CONFIG_DEST_2 = $$OUT_PWD/config.json
 
 MQTT_DLL_SOURCE = C:/Qt/6.8.2/msvc2022_64/bin/Qt6Mqtt.dll
 MQTT_DLL_DEST = $$OUT_PWD/Qt6Mqtt.dll
@@ -22,6 +23,7 @@ MQTT_DLL_DEST = $$OUT_PWD/Qt6Mqtt.dll
 # For release builds
 CONFIG(release, debug|release) {
     CONFIG_DEST = $$OUT_PWD/config.json
+    CONFIG_DEST_2 = $$OUT_PWD/release/config.json
     MQTT_DLL_DEST = $$OUT_PWD/release/Qt6Mqtt.dll
 }
 
@@ -46,14 +48,16 @@ RESOURCES += \
     icons/icons.qrc
 
 copyconfig.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST, /, $$QMAKE_DIR_SEP)\"
+copyconfig2.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST_2, /, $$QMAKE_DIR_SEP)\"
 copymqttdll.commands = $$QMAKE_COPY_FILE \"$$replace(MQTT_DLL_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(MQTT_DLL_DEST, /, $$QMAKE_DIR_SEP)\"
 
 # Make sure these commands run as part of the build
-first.depends = $(first) copyconfig copymqttdll
+first.depends = $(first) copyconfig copyconfig2 copymqttdll
 export(first.depends)
 export(copyconfig.commands)
+export(copyconfig2.commands)
 export(copymqttdll.commands)
-QMAKE_EXTRA_TARGETS += first copyconfig copymqttdll
+QMAKE_EXTRA_TARGETS += first copyconfig copyconfig2 copymqttdll
 
 # Default rules for deployment
 qnx: target.path = /tmp/$${TARGET}/bin
