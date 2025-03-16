@@ -71,6 +71,16 @@ if(BUILD_MQTT_LOCALLY)
 
   # Add an alias for the library to match the expected name
   add_library(Qt6::Mqtt ALIAS Qt6Mqtt)
+  
+  # Create the QtMqtt directory structure for includes
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/QtMqtt)
+  
+  # Copy all MQTT headers to the include directory
+  file(GLOB MQTT_HEADERS "${MQTT_SRC_DIR}/*.h")
+  foreach(HEADER ${MQTT_HEADERS})
+    get_filename_component(FILENAME ${HEADER} NAME)
+    configure_file(${HEADER} ${CMAKE_BINARY_DIR}/include/QtMqtt/${FILENAME} COPYONLY)
+  endforeach()
 endif()
 
 # QCustomPlot
@@ -131,6 +141,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${QCGAUGEWIDGET_DIR}
     ${JSON_INCLUDE_DIR}
 )
+
+# Add the include path for QtMqtt when building locally
+if(BUILD_MQTT_LOCALLY)
+  target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${CMAKE_BINARY_DIR}/include
+  )
+endif()
 
 # Copy config.json to build directory
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
