@@ -37,6 +37,69 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
+    - name: Build MQTT Module
+      run: |
+        git clone https://code.qt.io/qt/qtmqtt.git
+        cd qtmqtt
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+        mkdir -p ${{ env.QT_ROOT_DIR }}/bin
+        mkdir -p ${{ env.QT_ROOT_DIR }}/lib
+        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt
+        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt
+        mkdir -p ${{ env.QT_ROOT_DIR }}/mkspecs/modules
+        copy bin\Qt6Mqtt.dll ${{ env.QT_ROOT_DIR }}\bin\
+        copy lib\Qt6Mqtt.lib ${{ env.QT_ROOT_DIR }}\lib\
+        copy ..\src\mqtt\*.h ${{ env.QT_ROOT_DIR }}\include\QtMqtt\
+        cd ..
+        cd ..
+
+    - name: Create MQTT exports header
+      run: |
+        echo "#ifndef QTMQTTEXPORTS_H" > ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#define QTMQTTEXPORTS_H" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#include <QtCore/qglobal.h>" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#if defined(QT_SHARED) || !defined(QT_STATIC)" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  if defined(QT_BUILD_MQTT_LIB)" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#    define Q_MQTT_EXPORT Q_DECL_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#    define Q_MQTT_EXPORT Q_DECL_IMPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define Q_MQTT_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#ifdef BUILD_STATIC" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_NO_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_EXPORT Q_DECL_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_NO_EXPORT Q_DECL_HIDDEN" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif // QTMQTTEXPORTS_H" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+
+    - name: Create MQTT module PRIs
+      run: |
+        echo "QT.mqtt.VERSION = ${{ env.QT_VERSION }}" > ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.name = QtMqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.module = Qt6Mqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.libs = $$QT_MODULE_LIB_BASE" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.includes = $$QT_MODULE_INCLUDE_BASE $$QT_MODULE_INCLUDE_BASE/QtMqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.frameworks =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.bins = $$QT_MODULE_BIN_BASE" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.depends = core network" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.uses =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.module_config = v2" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.DEFINES = QT_MQTT_LIB" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.enabled_features =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.disabled_features =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT_MODULES += mqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+
     - run: |
         cmake -S . -B build -A x64                      `
           -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
@@ -47,10 +110,20 @@ jobs:
 
     - run: cmake --build build --target package
 
+    - name: Create standalone package
+      run: |
+        cd install\bin
+        ${{ env.QT_ROOT_DIR }}\bin\windeployqt.exe --release --no-translations Control_GUI.exe
+        copy ${{ env.QT_ROOT_DIR }}\bin\Qt6Mqtt.dll .\
+        copy ..\..\config.json .\
+        Compress-Archive -Path * -DestinationPath ..\..\Control_GUI-standalone.zip
+
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-msvc-mqtt-qt
-        path: build/*.msi
+        path: |
+          build/*.msi
+          Control_GUI-standalone.zip
 
     - if: failure()
       uses: actions/upload-artifact@v4
@@ -78,6 +151,69 @@ jobs:
         tools: 'tools_mingw1310'
         add-tools-to-path: true
 
+    - name: Build MQTT Module
+      run: |
+        git clone https://code.qt.io/qt/qtmqtt.git
+        cd qtmqtt
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+        mkdir -p ${{ env.QT_ROOT_DIR }}/bin
+        mkdir -p ${{ env.QT_ROOT_DIR }}/lib
+        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt
+        mkdir -p ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt
+        mkdir -p ${{ env.QT_ROOT_DIR }}/mkspecs/modules
+        copy bin\Qt6Mqtt.dll ${{ env.QT_ROOT_DIR }}\bin\
+        copy lib\libQt6Mqtt.a ${{ env.QT_ROOT_DIR }}\lib\
+        copy ..\src\mqtt\*.h ${{ env.QT_ROOT_DIR }}\include\QtMqtt\
+        cd ..
+        cd ..
+
+    - name: Create MQTT exports header
+      run: |
+        echo "#ifndef QTMQTTEXPORTS_H" > ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#define QTMQTTEXPORTS_H" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#include <QtCore/qglobal.h>" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#if defined(QT_SHARED) || !defined(QT_STATIC)" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  if defined(QT_BUILD_MQTT_LIB)" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#    define Q_MQTT_EXPORT Q_DECL_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#    define Q_MQTT_EXPORT Q_DECL_IMPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define Q_MQTT_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#ifdef BUILD_STATIC" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_NO_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#else" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_EXPORT Q_DECL_EXPORT" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#  define QTMQTT_NO_EXPORT Q_DECL_HIDDEN" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+        echo "#endif // QTMQTTEXPORTS_H" >> ${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h
+
+    - name: Create MQTT module PRIs
+      run: |
+        echo "QT.mqtt.VERSION = ${{ env.QT_VERSION }}" > ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.name = QtMqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.module = Qt6Mqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.libs = $$QT_MODULE_LIB_BASE" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.includes = $$QT_MODULE_INCLUDE_BASE $$QT_MODULE_INCLUDE_BASE/QtMqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.frameworks =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.bins = $$QT_MODULE_BIN_BASE" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.depends = core network" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.uses =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.module_config = v2" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.DEFINES = QT_MQTT_LIB" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.enabled_features =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT.mqtt.disabled_features =" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+        echo "QT_MODULES += mqtt" >> ${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri
+
     - run: |
         cmake -G "MinGW Makefiles" -S . -B build        `
           -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"  `
@@ -89,10 +225,20 @@ jobs:
 
     - run: cmake --build build --config Release --target package
 
+    - name: Create standalone package
+      run: |
+        cd install\bin
+        ${{ env.QT_ROOT_DIR }}\bin\windeployqt.exe --release --no-translations Control_GUI.exe
+        copy ${{ env.QT_ROOT_DIR }}\bin\Qt6Mqtt.dll .\
+        copy ..\..\config.json .\
+        Compress-Archive -Path * -DestinationPath ..\..\Control_GUI-mingw-standalone.zip
+
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-mingw-mqtt-qt
-        path: build/*.msi
+        path: |
+          build/*.msi
+          Control_GUI-mingw-standalone.zip
 
     - if: failure()
       uses: actions/upload-artifact@v4
@@ -100,7 +246,7 @@ jobs:
         name: mingw-build-failed
         path: build/
 
-
+  # Ubuntu build - kept exactly as in the original file
   build-ubuntu:
     name: Build Ubuntu
     runs-on: ${{ matrix.os }}
@@ -140,3 +286,24 @@ jobs:
       with:
         name: ${{ runner.os }}-build-failed
         path: build/
+
+  release:
+    needs: [build-msvc, build-mingw, build-ubuntu]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.msi
+            artifacts/**/*.zip
+            artifacts/**/mqtt-qt*
+          draft: false
+          prerelease: false
