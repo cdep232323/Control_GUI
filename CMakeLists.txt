@@ -11,28 +11,12 @@ set(CMAKE_AUTOUIC ON)
 # Find required Qt components
 find_package(Qt6 COMPONENTS Core Gui Widgets Network PrintSupport REQUIRED)
 
-# Option to control whether to build MQTT from source
+# Options for MQTT building
 option(BUILD_MQTT_LOCALLY "Build Qt MQTT module locally" ON)
+option(QT_ALLOW_PRIVATE_INCLUDES "Allow including Qt private headers" OFF)
 
 # Try to find Qt MQTT module through standard Qt mechanisms
 find_package(Qt6 COMPONENTS Mqtt QUIET)
-
-# If not found through standard mechanisms, try system packages on Linux
-if(NOT Qt6Mqtt_FOUND)
-  if(UNIX AND NOT APPLE)
-    message(STATUS "Trying to find system Qt MQTT package...")
-    # For systems with apt package manager (like Ubuntu)
-    find_library(QT_MQTT_LIB Qt6Mqtt)
-    if(QT_MQTT_LIB)
-      message(STATUS "Found system Qt MQTT library: ${QT_MQTT_LIB}")
-      add_library(Qt6::Mqtt SHARED IMPORTED)
-      set_target_properties(Qt6::Mqtt PROPERTIES
-        IMPORTED_LOCATION "${QT_MQTT_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "/usr/include/qt6/QtMqtt")
-      set(Qt6Mqtt_FOUND TRUE)
-    endif()
-  endif()
-endif()
 
 # Build MQTT from source if needed and allowed
 if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
@@ -45,6 +29,35 @@ if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
       message(FATAL_ERROR "MQTT source not found at ${MQTT_SRC_DIR}. Please download MQTT source code to this location.")
   endif()
 
+  # Find Qt private headers if enabled
+  if(QT_ALLOW_PRIVATE_INCLUDES)
+    # Try to find private headers in different potential locations
+    set(QT_PRIVATE_INCLUDES
+      # Qt installed from installer
+      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}
+      ${CMAKE_PREFIX_PATH}/include/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}/QtCore
+      # Ubuntu package locations
+      /usr/include/x86_64-linux-gnu/qt6/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}
+      /usr/include/x86_64-linux-gnu/qt6/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}/QtCore
+      # General system locations
+      /usr/include/qt6/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}
+      /usr/include/qt6/QtCore/${Qt6Core_VERSION_MAJOR}.${Qt6Core_VERSION_MINOR}.${Qt6Core_VERSION_PATCH}/QtCore
+    )
+    
+    # Check if we can find the private headers
+    foreach(INCLUDE_DIR ${QT_PRIVATE_INCLUDES})
+      if(EXISTS "${INCLUDE_DIR}/private/qobject_p.h")
+        message(STATUS "Found Qt private headers at: ${INCLUDE_DIR}")
+        set(QT_PRIVATE_HEADERS_FOUND TRUE)
+        break()
+      endif()
+    endforeach()
+    
+    if(NOT QT_PRIVATE_HEADERS_FOUND)
+      message(WARNING "Qt private headers not found. MQTT build may fail. Tried: ${QT_PRIVATE_INCLUDES}")
+    endif()
+  endif()
+
   # Define MQTT source files
   set(MQTT_SOURCES
       ${MQTT_SRC_DIR}/qmqttclient.cpp
@@ -54,8 +67,12 @@ if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.cpp
       ${MQTT_SRC_DIR}/qmqtttopicfilter.cpp
       ${MQTT_SRC_DIR}/qmqtttopicname.cpp
-      ${MQTT_SRC_DIR}/qmqtttype.cpp
   )
+  
+  # Add qmqtttype.cpp if it exists
+  if(EXISTS "${MQTT_SRC_DIR}/qmqtttype.cpp")
+      list(APPEND MQTT_SOURCES "${MQTT_SRC_DIR}/qmqtttype.cpp")
+  endif()
 
   # Define MQTT header files
   set(MQTT_HEADERS
@@ -67,16 +84,25 @@ if(NOT Qt6Mqtt_FOUND AND BUILD_MQTT_LOCALLY)
       ${MQTT_SRC_DIR}/qmqttsubscription.h
       ${MQTT_SRC_DIR}/qmqtttopicfilter.h
       ${MQTT_SRC_DIR}/qmqtttopicname.h
-      ${MQTT_SRC_DIR}/qmqtttype.h
   )
+  
+  # Add qmqtttype.h if it exists
+  if(EXISTS "${MQTT_SRC_DIR}/qmqtttype.h")
+      list(APPEND MQTT_HEADERS "${MQTT_SRC_DIR}/qmqtttype.h")
+  endif()
 
   # Create MQTT library
   add_library(Qt6Mqtt STATIC ${MQTT_SOURCES} ${MQTT_HEADERS})
-  target_include_directories(Qt6Mqtt 
-    PUBLIC 
-      ${MQTT_SRC_DIR}
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src
-  )
+  
+  # Set include directories
+  target_include_directories(Qt6Mqtt PUBLIC ${MQTT_SRC_DIR})
+  target_include_directories(Qt6Mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/qtmqtt/src)
+  
+  # Add Qt private headers if allowed
+  if(QT_ALLOW_PRIVATE_INCLUDES)
+    target_include_directories(Qt6Mqtt PUBLIC ${QT_PRIVATE_INCLUDES})
+  endif()
+  
   target_link_libraries(Qt6Mqtt PUBLIC Qt6::Core Qt6::Network)
   target_compile_definitions(Qt6Mqtt PRIVATE QT_BUILD_MQTT_LIB)
 
