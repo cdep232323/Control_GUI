@@ -258,34 +258,34 @@ jobs:
           mkdir -p appdir/usr/lib
           mkdir -p appdir/usr/share/applications
           mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
+          mkdir -p appdir/usr/lib/plugins
           
           # Copy application binary
           cp Control_GUI appdir/usr/bin/
           cp ../config.json appdir/usr/bin/
           
-          # Copy Qt and system libraries
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Mqtt.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Core.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Gui.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Widgets.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Network.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6PrintSupport.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicui18n.so* appdir/usr/lib/ || echo "libicui18n not found"
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicuuc.so* appdir/usr/lib/ || echo "libicuuc not found"
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicudata.so* appdir/usr/lib/ || echo "libicudata not found"
+          # Copy all Qt libraries
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6*.so* appdir/usr/lib/ || echo "Some Qt libraries may not have been found"
           
           # Copy system libraries
           cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 appdir/usr/lib/ || echo "libstdc++ not found"
           cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 appdir/usr/lib/ || echo "libgcc_s not found"
           
-          # Copy plugins needed by Qt
-          mkdir -p appdir/usr/lib/plugins/platforms
-          mkdir -p appdir/usr/lib/plugins/imageformats
-          mkdir -p appdir/usr/lib/plugins/iconengines
-          cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/ || echo "libqxcb.so not found"
-          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/ || echo "JPEG plugin not found"
-          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/ || echo "SVG plugin not found"
-          cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/ || echo "SVG icon plugin not found"
+          # Copy all Qt plugins
+          if [ -d "${{ env.QT_ROOT_DIR }}/plugins" ]; then
+            cp -r ${{ env.QT_ROOT_DIR }}/plugins/* appdir/usr/lib/plugins/ || echo "Some plugins may not have been copied"
+          else
+            echo "Plugins directory not found at ${{ env.QT_ROOT_DIR }}/plugins"
+            # Create essential plugin directories
+            mkdir -p appdir/usr/lib/plugins/platforms
+            mkdir -p appdir/usr/lib/plugins/imageformats
+            mkdir -p appdir/usr/lib/plugins/iconengines
+            # Copy individual plugins if they exist
+            cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/ || echo "libqxcb.so not found"
+            cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/ || echo "JPEG plugin not found"
+            cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/ || echo "SVG plugin not found"
+            cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/ || echo "SVG icon plugin not found"
+          fi
           
           # Create desktop entry
           cat > appdir/usr/share/applications/control-gui.desktop << EOF
@@ -300,30 +300,42 @@ jobs:
           # Create a simple placeholder icon
           convert -size 256x256 xc:transparent -fill blue -draw "circle 128,128 128,20" appdir/usr/share/icons/hicolor/256x256/apps/control-gui.png
           
-          # Create a launcher script (AppRun)
+          # Create an improved launcher script (AppRun)
           cat > appdir/AppRun << EOF
           #!/bin/bash
           HERE="\$(dirname "\$(readlink -f "\${0}")")"
+          
+          # Clear Qt-related environment variables to prevent mixing with system Qt
+          unset QT_PLUGIN_PATH
+          unset QML2_IMPORT_PATH
+          unset QT_QPA_PLATFORM_PLUGIN_PATH
+          unset QT_QPA_FONTDIR
+          unset QT_SCALE_FACTOR
+          unset QT_SCREEN_SCALE_FACTORS
+          unset QT_AUTO_SCREEN_SCALE_FACTOR
+          unset QT_STYLE_OVERRIDE
+          
+          # Set our own environment
           export LD_LIBRARY_PATH="\$HERE/usr/lib:\$LD_LIBRARY_PATH"
           export QT_PLUGIN_PATH="\$HERE/usr/lib/plugins"
           export QML2_IMPORT_PATH="\$HERE/usr/lib/qml"
           export XDG_DATA_DIRS="\$HERE/usr/share:\$XDG_DATA_DIRS"
+          
+          # For debugging Qt plugin issues
+          # export QT_DEBUG_PLUGINS=1
+          
+          # Run the application
           "\$HERE/usr/bin/Control_GUI" "\$@"
           EOF
           chmod +x appdir/AppRun
           
-          # Create the tar.gz - fixing this part
-          tar -czvf Control_GUI-complete.tar.gz -C appdir .
-          
-          # Also create a second package with a different name for testing
+          # Create the tar.gz
           tar -czvf Control_GUI-linux.tar.gz -C appdir .
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-mqtt-qt-complete
-          path: |
-            build/Control_GUI-complete.tar.gz
-            build/Control_GUI-linux.tar.gz
+          path: build/Control_GUI-linux.tar.gz
     
       - if: failure()
         uses: actions/upload-artifact@v4
