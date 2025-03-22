@@ -158,12 +158,7 @@ jobs:
 
   build-ubuntu:
     name: Build Ubuntu
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-20.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
     
@@ -171,19 +166,22 @@ jobs:
         with:
           key: ${{ github.job }}-${{ runner.os }}
     
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: ${{ env.QT_VERSION }}
-          cache: true
-          dir: ${{ github.workspace }}
-    
-      - name: Install Qt development dependencies
+      - name: Install Qt6 from PPAs
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools ninja-build imagemagick
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:beineri/opt-qt-${{ env.QT_VERSION }}-focal -y
+          sudo apt-get update
+          sudo apt-get install -y qt${{ env.QT_VERSION/.*/}}-full ninja-build cmake git libxkbcommon-dev libxcb-cursor0 imagemagick
           
-      - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
-
+      # Set up Qt environment variables
+      - name: Set up Qt environment
+        run: |
+          echo "/opt/qt${{ env.QT_VERSION/.*/}}/bin" >> $GITHUB_PATH
+          echo "QT_ROOT_DIR=/opt/qt${{ env.QT_VERSION/.*/}}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/opt/qt${{ env.QT_VERSION/.*/}}/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/opt/qt${{ env.QT_VERSION/.*/}}/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+      
       - name: Build MQTT Module
         run: |
           git clone https://code.qt.io/qt/qtmqtt.git
@@ -191,11 +189,14 @@ jobs:
           git checkout 6.5
           mkdir build
           cd build
+          
+          # Source Qt environment
+          source /opt/qt${{ env.QT_VERSION/.*/}}/bin/qt${{ env.QT_VERSION/.*/}}-env.sh
+          
           cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
           cmake --build . --config Release
           
           # Create the necessary directory structure
-          sudo mkdir -p "${{ env.QT_ROOT_DIR }}/bin"
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/lib"
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt"
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/mkspecs/modules"
@@ -209,7 +210,7 @@ jobs:
           cd ..
           cd ..
 
-      - name: Create MQTT exports header and directory structure
+      - name: Create MQTT exports header
         run: |
           # Create the directory structure that matches how Qt headers are referenced
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt"
@@ -268,8 +269,8 @@ jobs:
       # Configure CMake with compatibility flags
       - name: Configure CMake
         run: |
-          # Setting up custom find paths for the Mqtt module
-          export CMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+          # Source Qt environment
+          source /opt/qt${{ env.QT_VERSION/.*/}}/bin/qt${{ env.QT_VERSION/.*/}}-env.sh
           
           # Run CMake with compatibility flags
           cmake -S . -B build \
@@ -280,6 +281,9 @@ jobs:
         
       - name: Build project
         run: |
+          # Source Qt environment
+          source /opt/qt${{ env.QT_VERSION/.*/}}/bin/qt${{ env.QT_VERSION/.*/}}-env.sh
+          
           cmake --build build
     
       # Create a fully standalone package with all dependencies
@@ -302,15 +306,19 @@ jobs:
           cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Widgets.so* appdir/usr/lib/
           cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Network.so* appdir/usr/lib/
           cp ${{ env.QT_ROOT_DIR }}/lib/libQt6PrintSupport.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicui18n.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicuuc.so* appdir/usr/lib/
-          cp ${{ env.QT_ROOT_DIR }}/lib/libicudata.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicui18n.so* appdir/usr/lib/ || echo "libicui18n not found"
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicuuc.so* appdir/usr/lib/ || echo "libicuuc not found"
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicudata.so* appdir/usr/lib/ || echo "libicudata not found"
+          
+          # Copy additional system libraries that might be needed
+          cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 appdir/usr/lib/ || echo "libstdc++ not found"
+          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 appdir/usr/lib/ || echo "libgcc_s not found"
           
           # Copy plugins needed by Qt
           mkdir -p appdir/usr/lib/plugins/platforms
           mkdir -p appdir/usr/lib/plugins/imageformats
           mkdir -p appdir/usr/lib/plugins/iconengines
-          cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/
+          cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/ || echo "libqxcb.so not found"
           cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/ || echo "JPEG plugin not found"
           cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/ || echo "SVG plugin not found"
           cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/ || echo "SVG icon plugin not found"
