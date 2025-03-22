@@ -312,15 +312,18 @@ jobs:
           EOF
           chmod +x appdir/AppRun
           
-          # Create the tar.gz
-          cd appdir
-          tar -czvf ../../Control_GUI-complete.tar.gz .
-          cd ..
+          # Create the tar.gz - fixing this part
+          tar -czvf Control_GUI-complete.tar.gz -C appdir .
+          
+          # Also create a second package with a different name for testing
+          tar -czvf Control_GUI-linux.tar.gz -C appdir .
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-mqtt-qt-complete
-          path: build/Control_GUI-complete.tar.gz
+          path: |
+            build/Control_GUI-complete.tar.gz
+            build/Control_GUI-linux.tar.gz
     
       - if: failure()
         uses: actions/upload-artifact@v4
