@@ -163,7 +163,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-20.04  # Use an older Ubuntu version for better compatibility
+          - ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
     
@@ -180,7 +180,7 @@ jobs:
       - name: Install Qt development dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools ninja-build
+          sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools ninja-build imagemagick
           
       - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
@@ -311,9 +311,9 @@ jobs:
           mkdir -p appdir/usr/lib/plugins/imageformats
           mkdir -p appdir/usr/lib/plugins/iconengines
           cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/
-          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/
-          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/
-          cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/
+          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/ || echo "JPEG plugin not found"
+          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/ || echo "SVG plugin not found"
+          cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/ || echo "SVG icon plugin not found"
           
           # Create desktop entry
           cat > appdir/usr/share/applications/control-gui.desktop << EOF
@@ -340,31 +340,39 @@ jobs:
           EOF
           chmod +x appdir/AppRun
           
-          # Use linuxdeploy to create AppImage (if installed)
-          if command -v linuxdeploy-x86_64.AppImage >/dev/null 2>&1; then
-            ./linuxdeploy-x86_64.AppImage --appdir=appdir --output=appimage
-          else
-            # Otherwise create a tar.gz
-            cd appdir
-            tar -czvf ../../Control_GUI-complete.tar.gz .
-            cd ..
-          fi
-          
-          # Create a simpler tar.gz backup in case AppImage fails
+          # Create the tar.gz
           cd appdir
-          tar -czvf ../../Control_GUI-appdir.tar.gz .
+          tar -czvf ../../Control_GUI-complete.tar.gz .
           cd ..
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-mqtt-qt-complete
-          path: |
-            build/Control_GUI-complete.tar.gz
-            build/Control_GUI-appdir.tar.gz
-            build/*.AppImage
+          path: build/Control_GUI-complete.tar.gz
     
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-build-failed
           path: build/
+
+  release:
+    needs: [build-msvc, build-ubuntu]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
+            artifacts/**/Control_GUI*
+          draft: false
+          prerelease: false
