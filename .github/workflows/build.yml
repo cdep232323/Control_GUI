@@ -15,7 +15,6 @@ concurrency:
 
 env:
   QT_VERSION: 6.5.3
-  QT_PREFIX: 65
 
 jobs:
   build-msvc:
@@ -167,21 +166,17 @@ jobs:
         with:
           key: ${{ github.job }}-${{ runner.os }}
     
-      - name: Install Qt6 from PPAs
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+          dir: ${{ github.workspace }}
+          tools: tools_ninja
+      
+      - name: Install additional dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y software-properties-common
-          sudo add-apt-repository ppa:beineri/opt-qt-${{ env.QT_VERSION }}-focal -y
-          sudo apt-get update
-          sudo apt-get install -y qt${{ env.QT_PREFIX }}-full ninja-build cmake git libxkbcommon-dev libxcb-cursor0 imagemagick
-          
-      # Set up Qt environment variables
-      - name: Set up Qt environment
-        run: |
-          echo "/opt/qt${{ env.QT_PREFIX }}/bin" >> $GITHUB_PATH
-          echo "QT_ROOT_DIR=/opt/qt${{ env.QT_PREFIX }}" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/opt/qt${{ env.QT_PREFIX }}/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/opt/qt${{ env.QT_PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          sudo apt-get install -y build-essential libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0 imagemagick
       
       - name: Build MQTT Module
         run: |
@@ -190,10 +185,6 @@ jobs:
           git checkout 6.5
           mkdir build
           cd build
-          
-          # Source Qt environment
-          source /opt/qt${{ env.QT_PREFIX }}/bin/qt${{ env.QT_PREFIX }}-env.sh
-          
           cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
           cmake --build . --config Release
           
@@ -248,44 +239,16 @@ jobs:
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt"
           sudo ln -sf "${{ env.QT_ROOT_DIR }}/include/QtMqtt/qtmqttexports.h" "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h"
 
-      - name: Create MQTT module PRIs
+      - name: Configure and build with CMake
         run: |
-          cat << EOF | sudo tee "${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri"
-          QT.mqtt.VERSION = ${{ env.QT_VERSION }}
-          QT.mqtt.name = QtMqtt
-          QT.mqtt.module = Qt6Mqtt
-          QT.mqtt.libs = \$\$QT_MODULE_LIB_BASE
-          QT.mqtt.includes = \$\$QT_MODULE_INCLUDE_BASE \$\$QT_MODULE_INCLUDE_BASE/QtMqtt
-          QT.mqtt.frameworks =
-          QT.mqtt.bins = \$\$QT_MODULE_BIN_BASE
-          QT.mqtt.depends = core network
-          QT.mqtt.uses =
-          QT.mqtt.module_config = v2
-          QT.mqtt.DEFINES = QT_MQTT_LIB
-          QT.mqtt.enabled_features =
-          QT.mqtt.disabled_features =
-          QT_MODULES += mqtt
-          EOF
-
-      # Configure CMake with compatibility flags
-      - name: Configure CMake
-        run: |
-          # Source Qt environment
-          source /opt/qt${{ env.QT_PREFIX }}/bin/qt${{ env.QT_PREFIX }}-env.sh
-          
-          # Run CMake with compatibility flags
+          # Using the Qt that jurplel/install-qt-action installed
           cmake -S . -B build \
             -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" \
             -DBUILD_MQTT_LOCALLY=OFF \
-            -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_VERBOSE_MAKEFILE=ON
-        
-      - name: Build project
-        run: |
-          # Source Qt environment
-          source /opt/qt${{ env.QT_PREFIX }}/bin/qt${{ env.QT_PREFIX }}-env.sh
-          
-          cmake --build build
+            
+          cmake --build build --config Release
     
       # Create a fully standalone package with all dependencies
       - name: Create complete standalone package
@@ -311,7 +274,7 @@ jobs:
           cp ${{ env.QT_ROOT_DIR }}/lib/libicuuc.so* appdir/usr/lib/ || echo "libicuuc not found"
           cp ${{ env.QT_ROOT_DIR }}/lib/libicudata.so* appdir/usr/lib/ || echo "libicudata not found"
           
-          # Copy additional system libraries that might be needed
+          # Copy system libraries
           cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 appdir/usr/lib/ || echo "libstdc++ not found"
           cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 appdir/usr/lib/ || echo "libgcc_s not found"
           
@@ -337,7 +300,7 @@ jobs:
           # Create a simple placeholder icon
           convert -size 256x256 xc:transparent -fill blue -draw "circle 128,128 128,20" appdir/usr/share/icons/hicolor/256x256/apps/control-gui.png
           
-          # Create a launcher script
+          # Create a launcher script (AppRun)
           cat > appdir/AppRun << EOF
           #!/bin/bash
           HERE="\$(dirname "\$(readlink -f "\${0}")")"
