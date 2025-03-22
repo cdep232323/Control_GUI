@@ -163,7 +163,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-20.04  # Use an older Ubuntu version for better compatibility
     steps:
       - uses: actions/checkout@v4
     
@@ -206,18 +206,7 @@ jobs:
           # Install all MQTT headers to the include directory
           sudo cp -r ../src/mqtt/*.h "${{ env.QT_ROOT_DIR }}/include/QtMqtt/"
           
-          # Create the exported headers structure for the build
           cd ..
-          
-          # Create QtMqttDepends file needed by CMake
-          mkdir -p QtMqttDependencies/cmake
-          echo "# Qt6 Mqtt package dependencies
-          get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_DIR}/../../..\" ABSOLUTE)
-          find_dependency(Qt6Core)
-          find_dependency(Qt6Network)" > QtMqttDependencies/cmake/Qt6MqttDependencies.cmake
-          sudo mkdir -p "${{ env.QT_ROOT_DIR }}/lib/cmake/Qt6Mqtt/"
-          sudo cp -r QtMqttDependencies/cmake "${{ env.QT_ROOT_DIR }}/lib/cmake/Qt6Mqtt/"
-          
           cd ..
 
       - name: Create MQTT exports header and directory structure
@@ -254,7 +243,6 @@ jobs:
           EOF
           
           # Create a symlink for the header within the module-specific subdirectory
-          # This handles includes like <QtMqtt/QtMqtt/qtmqttexports.h>
           sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt"
           sudo ln -sf "${{ env.QT_ROOT_DIR }}/include/QtMqtt/qtmqttexports.h" "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h"
 
@@ -277,81 +265,106 @@ jobs:
           QT_MODULES += mqtt
           EOF
 
-      # Configure CMake with debugging information
+      # Configure CMake with compatibility flags
       - name: Configure CMake
         run: |
-          # Create a basic file to test the exports header is working
-          cat << EOF > mqtttest.cpp
-          #include <QtMqtt/qmqttclient.h>
-          int main() { QMqttClient client; return 0; }
-          EOF
-          g++ -c mqtttest.cpp -I${{ env.QT_ROOT_DIR }}/include || echo "Direct include test failed but continuing"
-          
           # Setting up custom find paths for the Mqtt module
           export CMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
           
-          # Run CMake with full MQTT path specification and verbose output
+          # Run CMake with compatibility flags
           cmake -S . -B build \
             -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" \
             -DBUILD_MQTT_LOCALLY=OFF \
+            -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" \
             -DCMAKE_VERBOSE_MAKEFILE=ON
         
       - name: Build project
         run: |
-          # Print out the includes to verify existence
-          ls -la ${{ env.QT_ROOT_DIR }}/include/QtMqtt/
-          
-          # Build with verbose output
           cmake --build build
     
-      # Create a standalone package
-      - name: Create standalone package
+      # Create a fully standalone package with all dependencies
+      - name: Create complete standalone package
         run: |
           cd build
-          mkdir -p deploy
-          cp Control_GUI deploy/
-          cp ../config.json deploy/
-          # Use Qt's deployment tool for Linux
-          ${{ env.QT_ROOT_DIR }}/bin/qmake -query
-          mkdir -p deploy/lib
-          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Mqtt.so* deploy/lib/
-          # Create a simple script to set LD_LIBRARY_PATH
-          echo '#!/bin/bash' > deploy/run.sh
-          echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"' >> deploy/run.sh
-          echo 'export LD_LIBRARY_PATH="$DIR/lib:$LD_LIBRARY_PATH"' >> deploy/run.sh
-          echo '$DIR/Control_GUI "$@"' >> deploy/run.sh
-          chmod +x deploy/run.sh
-          # Create archive
-          tar -czvf Control_GUI-standalone.tar.gz -C deploy .
+          mkdir -p appdir/usr/bin
+          mkdir -p appdir/usr/lib
+          mkdir -p appdir/usr/share/applications
+          mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
+          
+          # Copy application binary
+          cp Control_GUI appdir/usr/bin/
+          cp ../config.json appdir/usr/bin/
+          
+          # Copy Qt and system libraries
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Mqtt.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Core.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Gui.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Widgets.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Network.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libQt6PrintSupport.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicui18n.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicuuc.so* appdir/usr/lib/
+          cp ${{ env.QT_ROOT_DIR }}/lib/libicudata.so* appdir/usr/lib/
+          
+          # Copy plugins needed by Qt
+          mkdir -p appdir/usr/lib/plugins/platforms
+          mkdir -p appdir/usr/lib/plugins/imageformats
+          mkdir -p appdir/usr/lib/plugins/iconengines
+          cp ${{ env.QT_ROOT_DIR }}/plugins/platforms/libqxcb.so appdir/usr/lib/plugins/platforms/
+          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqjpeg.so appdir/usr/lib/plugins/imageformats/
+          cp ${{ env.QT_ROOT_DIR }}/plugins/imageformats/libqsvg.so appdir/usr/lib/plugins/imageformats/
+          cp ${{ env.QT_ROOT_DIR }}/plugins/iconengines/libqsvgicon.so appdir/usr/lib/plugins/iconengines/
+          
+          # Create desktop entry
+          cat > appdir/usr/share/applications/control-gui.desktop << EOF
+          [Desktop Entry]
+          Name=Control GUI
+          Exec=Control_GUI
+          Icon=control-gui
+          Type=Application
+          Categories=Utility;
+          EOF
+          
+          # Create a simple placeholder icon
+          convert -size 256x256 xc:transparent -fill blue -draw "circle 128,128 128,20" appdir/usr/share/icons/hicolor/256x256/apps/control-gui.png
+          
+          # Create a launcher script
+          cat > appdir/AppRun << EOF
+          #!/bin/bash
+          HERE="\$(dirname "\$(readlink -f "\${0}")")"
+          export LD_LIBRARY_PATH="\$HERE/usr/lib:\$LD_LIBRARY_PATH"
+          export QT_PLUGIN_PATH="\$HERE/usr/lib/plugins"
+          export QML2_IMPORT_PATH="\$HERE/usr/lib/qml"
+          export XDG_DATA_DIRS="\$HERE/usr/share:\$XDG_DATA_DIRS"
+          "\$HERE/usr/bin/Control_GUI" "\$@"
+          EOF
+          chmod +x appdir/AppRun
+          
+          # Use linuxdeploy to create AppImage (if installed)
+          if command -v linuxdeploy-x86_64.AppImage >/dev/null 2>&1; then
+            ./linuxdeploy-x86_64.AppImage --appdir=appdir --output=appimage
+          else
+            # Otherwise create a tar.gz
+            cd appdir
+            tar -czvf ../../Control_GUI-complete.tar.gz .
+            cd ..
+          fi
+          
+          # Create a simpler tar.gz backup in case AppImage fails
+          cd appdir
+          tar -czvf ../../Control_GUI-appdir.tar.gz .
+          cd ..
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-mqtt-qt
-          path: build/Control_GUI-standalone.tar.gz
+          name: ${{ runner.os }}-mqtt-qt-complete
+          path: |
+            build/Control_GUI-complete.tar.gz
+            build/Control_GUI-appdir.tar.gz
+            build/*.AppImage
     
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-build-failed
           path: build/
-
-  release:
-    needs: [build-msvc, build-ubuntu]
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/**/*.zip
-            artifacts/**/*.tar.gz
-            artifacts/**/Control_GUI*
-          draft: false
-          prerelease: false
