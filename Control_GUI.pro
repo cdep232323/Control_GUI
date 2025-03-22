@@ -8,12 +8,22 @@ qtHaveModule(mqtt) {
     QT += mqtt
     message("Using pre-built Qt MQTT module")
     
-    # Direct path to the MQTT library instead of using QT_MODULE_LIB_BASE variable
+    # Direct path to the MQTT library
     win32 {
+        LIBS += -L$$[QT_INSTALL_LIBS] -lQt6Mqtt
+    }
+    unix {
         LIBS += -L$$[QT_INSTALL_LIBS] -lQt6Mqtt
     }
 } else {
     message("Pre-built Qt MQTT module not found, using local source files")
+    
+    # Check if the MQTT source exists, if not try to clone it
+    !exists($$PWD/thirdparty/qtmqtt/src/mqtt/qmqttclient.h) {
+        message("MQTT source not found, attempting to clone it")
+        system(git clone https://code.qt.io/qt/qtmqtt.git $$PWD/thirdparty/qtmqtt)
+        system(cd $$PWD/thirdparty/qtmqtt && git checkout 6.5)
+    }
     
     # MQTT Integration from source
     QTMQTT_ROOT = $$PWD/thirdparty/qtmqtt
@@ -60,7 +70,7 @@ FORMS += \
 CONFIG_SOURCE = $$PWD/config.json
 CONFIG_DEST = $$OUT_PWD/config.json
 
-# MQTT DLL copy (only needed when using pre-built module)
+# MQTT DLL copy (only needed when using pre-built module on Windows)
 qtHaveModule(mqtt) {
     win32 {
         MQTT_DLL_SOURCE = $$[QT_INSTALL_BINS]/Qt6Mqtt.dll
@@ -103,15 +113,21 @@ INCLUDEPATH += $$PICOJSON_DIR
 RESOURCES += \
     icons/icons.qrc
 
-# Copy commands
-copyconfig.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST, /, $$QMAKE_DIR_SEP)\"
-
-# Only create MQTT copy command if using pre-built module
-qtHaveModule(mqtt):win32 {
-    copymqttdll.commands = $$QMAKE_COPY_FILE \"$$replace(MQTT_DLL_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(MQTT_DLL_DEST, /, $$QMAKE_DIR_SEP)\"
-    first.depends = $(first) copyconfig copymqttdll
-    export(copymqttdll.commands)
+# Define copy commands differently for Windows and Unix
+win32 {
+    copyconfig.commands = $$QMAKE_COPY_FILE \"$$replace(CONFIG_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(CONFIG_DEST, /, $$QMAKE_DIR_SEP)\"
+    
+    # Only create MQTT copy command if using pre-built module
+    qtHaveModule(mqtt) {
+        copymqttdll.commands = $$QMAKE_COPY_FILE \"$$replace(MQTT_DLL_SOURCE, /, $$QMAKE_DIR_SEP)\" \"$$replace(MQTT_DLL_DEST, /, $$QMAKE_DIR_SEP)\"
+        first.depends = $(first) copyconfig copymqttdll
+        export(copymqttdll.commands)
+    } else {
+        first.depends = $(first) copyconfig
+    }
 } else {
+    # Unix copy commands
+    copyconfig.commands = cp -f \"$$CONFIG_SOURCE\" \"$$CONFIG_DEST\"
     first.depends = $(first) copyconfig
 }
 

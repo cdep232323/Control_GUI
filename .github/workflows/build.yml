@@ -180,42 +180,112 @@ jobs:
     - name: Install Qt development dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools
+        sudo apt-get install -y libxcb-cursor0 libxkbcommon-dev qt6-base-dev qt6-base-private-dev qt6-base-dev-tools ninja-build
         
     - run: echo "${{ env.QT_ROOT_DIR }}/bin" >> $GITHUB_PATH
 
-    # Explicitly turn OFF building MQTT locally for Ubuntu
+    - name: Build MQTT Module
+      run: |
+        git clone https://code.qt.io/qt/qtmqtt.git
+        cd qtmqtt
+        git checkout 6.5
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DQT_NO_PACKAGE_VERSION_CHECK=TRUE
+        cmake --build . --config Release
+        
+        sudo mkdir -p "${{ env.QT_ROOT_DIR }}/bin"
+        sudo mkdir -p "${{ env.QT_ROOT_DIR }}/lib"
+        sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt"
+        sudo mkdir -p "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt"
+        sudo mkdir -p "${{ env.QT_ROOT_DIR }}/mkspecs/modules"
+        
+        sudo cp lib/libQt6Mqtt.so* "${{ env.QT_ROOT_DIR }}/lib/"
+        sudo cp ../src/mqtt/*.h "${{ env.QT_ROOT_DIR }}/include/QtMqtt/"
+        cd ../..
+    
+    - name: Create MQTT exports header
+      run: |
+        cat << EOF | sudo tee "${{ env.QT_ROOT_DIR }}/include/QtMqtt/QtMqtt/qtmqttexports.h"
+        #ifndef QTMQTTEXPORTS_H
+        #define QTMQTTEXPORTS_H
+
+        #include <QtCore/qglobal.h>
+
+        #if defined(QT_SHARED) || !defined(QT_STATIC)
+        #  if defined(QT_BUILD_MQTT_LIB)
+        #    define Q_MQTT_EXPORT Q_DECL_EXPORT
+        #  else
+        #    define Q_MQTT_EXPORT Q_DECL_IMPORT
+        #  endif
+        #else
+        #  define Q_MQTT_EXPORT
+        #endif
+
+        #ifdef BUILD_STATIC
+        #  define QTMQTT_EXPORT
+        #  define QTMQTT_NO_EXPORT
+        #else
+        #  define QTMQTT_EXPORT Q_DECL_EXPORT
+        #  define QTMQTT_NO_EXPORT Q_DECL_HIDDEN
+        #endif
+
+        #endif // QTMQTTEXPORTS_H
+        EOF
+    
+    - name: Create MQTT module PRIs
+      run: |
+        cat << EOF | sudo tee "${{ env.QT_ROOT_DIR }}/mkspecs/modules/qt_lib_mqtt.pri"
+        QT.mqtt.VERSION = ${{ env.QT_VERSION }}
+        QT.mqtt.name = QtMqtt
+        QT.mqtt.module = Qt6Mqtt
+        QT.mqtt.libs = $$QT_MODULE_LIB_BASE
+        QT.mqtt.includes = $$QT_MODULE_INCLUDE_BASE $$QT_MODULE_INCLUDE_BASE/QtMqtt
+        QT.mqtt.frameworks =
+        QT.mqtt.bins = $$QT_MODULE_BIN_BASE
+        QT.mqtt.depends = core network
+        QT.mqtt.uses =
+        QT.mqtt.module_config = v2
+        QT.mqtt.DEFINES = QT_MQTT_LIB
+        QT.mqtt.enabled_features =
+        QT.mqtt.disabled_features =
+        QT_MODULES += mqtt
+        EOF
+
+    # Use CMake to build the project
     - run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" -DBUILD_MQTT_LOCALLY=OFF
       
     - run: cmake --build build
   
+    # Create a standalone package similar to Windows
+    - name: Create standalone package
+      run: |
+        cd build
+        mkdir -p deploy
+        cp Control_GUI deploy/
+        cp ../config.json deploy/
+        # Use Qt's deployment tool for Linux
+        ${{ env.QT_ROOT_DIR }}/bin/qmake -query
+        mkdir -p deploy/lib
+        cp ${{ env.QT_ROOT_DIR }}/lib/libQt6Mqtt.so* deploy/lib/
+        # Create a simple script to set LD_LIBRARY_PATH
+        echo '#!/bin/bash' > deploy/run.sh
+        echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"' >> deploy/run.sh
+        echo 'export LD_LIBRARY_PATH="$DIR/lib:$LD_LIBRARY_PATH"' >> deploy/run.sh
+        echo '$DIR/Control_GUI "$@"' >> deploy/run.sh
+        chmod +x deploy/run.sh
+        # Create archive
+        tar -czvf Control_GUI-standalone.tar.gz -C deploy .
+  
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-mqtt-qt
-        path: build/Control_GUI
+        path: |
+          build/Control_GUI-standalone.tar.gz
+          build/Control_GUI-standalone.AppImage
   
     - if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-build-failed
         path: build/
-
-  release:
-    needs: [build-msvc, build-ubuntu]
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/**/*.zip
-            artifacts/**/Control_GUI*
-          draft: false
-          prerelease: false
